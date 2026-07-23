@@ -3,7 +3,7 @@
 import React from 'react';
 import { LayoutDashboard, Users, ArrowUpRight, ShieldAlert, Settings, FileText, LogOut, ChevronRight, X } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCounts = {}, mobileOpen, setMobileOpen }) {
+export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCounts = {}, mobileOpen, setMobileOpen, collapsed }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard, count: null },
     { id: 'users', label: 'Users & Wallets', icon: Users, count: null },
@@ -20,14 +20,14 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
 
   return (
     <>
-      {/* Mobile Drawer Overlay Backdrop */}
+      {/* Mobile Drawer Backdrop Overlay */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
             backdropFilter: 'blur(4px)',
             zIndex: 40
           }}
@@ -35,24 +35,25 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
       )}
 
       <aside className={`admin-sidebar ${mobileOpen ? 'mobile-open' : ''}`} style={{
-        width: '270px',
-        backgroundColor: '#090d16',
-        borderRight: '1px solid rgba(255, 255, 255, 0.07)',
+        width: collapsed ? '80px' : '270px',
+        backgroundColor: '#0f1322',
+        borderRight: '1px solid rgba(250, 204, 21, 0.2)',
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        overflow: 'hidden'
       }}>
         {/* Brand Header with Official Logo */}
         <div style={{
-          padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          padding: collapsed ? '1.25rem 0.75rem' : '1.25rem 1.5rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: collapsed ? 'center' : 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <img
@@ -63,22 +64,24 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
                 height: '44px',
                 borderRadius: '12px',
                 objectFit: 'cover',
-                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.35)',
-                border: '1.5px solid rgba(245, 158, 11, 0.5)'
+                boxShadow: '0 4px 16px rgba(250, 204, 21, 0.35)',
+                border: '1.5px solid rgba(250, 204, 21, 0.6)'
               }}
             />
-            <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                Royal Ludo
+            {!collapsed && (
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                  Royal Ludo
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#facc15', fontWeight: 800, marginTop: '2px', letterSpacing: '0.04em' }}>
+                  SUPERADMIN PORTAL
+                </div>
               </div>
-              <div style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 800, marginTop: '2px', letterSpacing: '0.04em' }}>
-                SUPERADMIN PORTAL
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Close button for mobile screen */}
-          {setMobileOpen && (
+          {/* Close button for mobile screens */}
+          {setMobileOpen && !collapsed && (
             <button
               onClick={() => setMobileOpen(false)}
               className="mobile-close-btn"
@@ -90,10 +93,12 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
         </div>
 
         {/* Navigation List */}
-        <nav style={{ flex: 1, padding: '1.25rem 0.875rem', overflowY: 'auto' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.875rem', paddingLeft: '0.625rem' }}>
-            Navigation Console
-          </div>
+        <nav style={{ flex: 1, padding: collapsed ? '1.25rem 0.5rem' : '1.25rem 0.875rem', overflowY: 'auto' }}>
+          {!collapsed && (
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.875rem', paddingLeft: '0.625rem' }}>
+              Navigation Console
+            </div>
+          )}
 
           {navItems.map(item => {
             const Icon = item.icon;
@@ -102,51 +107,55 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
               <button
                 key={item.id}
                 onClick={() => handleTabClick(item.id)}
+                title={collapsed ? item.label : undefined}
                 style={{
                   width: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem 0.875rem',
-                  borderRadius: '10px',
+                  justifyContent: collapsed ? 'center' : 'space-between',
+                  padding: collapsed ? '0.875rem' : '0.75rem 0.875rem',
+                  borderRadius: '12px',
                   border: 'none',
-                  backgroundColor: isActive ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
-                  color: isActive ? '#f59e0b' : '#94a3b8',
-                  fontWeight: isActive ? 700 : 500,
+                  backgroundColor: isActive ? 'rgba(250, 204, 21, 0.15)' : 'transparent',
+                  color: isActive ? '#facc15' : '#94a3b8',
+                  fontWeight: isActive ? 800 : 500,
                   cursor: 'pointer',
-                  marginBottom: '0.375rem',
+                  marginBottom: '0.5rem',
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  borderLeft: isActive ? '3px solid #f59e0b' : '3px solid transparent'
+                  borderLeft: isActive ? '3px solid #facc15' : '3px solid transparent'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                  <Icon size={20} color={isActive ? '#f59e0b' : '#64748b'} />
-                  <span style={{ fontSize: '0.9rem' }}>{item.label}</span>
+                  <Icon size={22} color={isActive ? '#facc15' : '#64748b'} />
+                  {!collapsed && <span style={{ fontSize: '0.9rem' }}>{item.label}</span>}
                 </div>
 
-                {item.count ? (
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '9999px',
-                    backgroundColor: item.badgeColor === 'rose' ? 'rgba(244,63,94,0.2)' : 'rgba(245, 158, 11, 0.2)',
-                    color: item.badgeColor === 'rose' ? '#f87171' : '#fef08a'
-                  }}>
-                    {item.count}
-                  </span>
-                ) : isActive ? (
-                  <ChevronRight size={16} color="#f59e0b" />
-                ) : null}
+                {!collapsed && (
+                  item.count ? (
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      backgroundColor: item.badgeColor === 'rose' ? 'rgba(239,68,68,0.2)' : 'rgba(250, 204, 21, 0.2)',
+                      color: item.badgeColor === 'rose' ? '#f87171' : '#facc15'
+                    }}>
+                      {item.count}
+                    </span>
+                  ) : isActive ? (
+                    <ChevronRight size={16} color="#facc15" />
+                  ) : null
+                )}
               </button>
             );
           })}
         </nav>
 
         {/* Footer / Sign Out */}
-        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.07)', backgroundColor: '#060913' }}>
+        <div style={{ padding: collapsed ? '0.75rem' : '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: '#0a0c16' }}>
           <button
             onClick={onLogout}
+            title={collapsed ? "Sign Out Admin" : undefined}
             style={{
               width: '100%',
               display: 'flex',
@@ -154,18 +163,18 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, pendingCoun
               justifyContent: 'center',
               gap: '0.625rem',
               padding: '0.75rem',
-              borderRadius: '10px',
-              border: '1px solid rgba(244, 63, 94, 0.25)',
-              backgroundColor: 'rgba(244, 63, 94, 0.08)',
+              borderRadius: '12px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
               color: '#f87171',
-              fontWeight: 700,
+              fontWeight: 800,
               fontSize: '0.875rem',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
           >
             <LogOut size={18} />
-            <span>Sign Out Admin</span>
+            {!collapsed && <span>Sign Out Admin</span>}
           </button>
         </div>
       </aside>

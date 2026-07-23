@@ -4,6 +4,8 @@ import { GameSettings } from '@/lib/models/GameSettings';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 import { getClientIp } from '@/lib/ipHelper';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     await connectDB();

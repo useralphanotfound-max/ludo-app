@@ -2,23 +2,36 @@
 @import 'sweetalert2/dist/sweetalert2.min.css';
 
 :root {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color-scheme: dark;
-  --bg-main: #0b0f19;
-  --bg-sidebar: #0f172a;
-  --bg-card: #1e293b;
-  --bg-card-hover: #334155;
+  --bg-main: #0a0c16;
+  --bg-sidebar: #0f1322;
+  --bg-card: #13192e;
+  --bg-card-hover: #1c2541;
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(99, 102, 241, 0.3);
-  --accent-primary: #6366f1;
-  --accent-gold: #fbbf24;
-  --accent-emerald: #10b981;
-  --accent-cyan: #06b6d4;
-  --accent-rose: #f43f5e;
+  
+  /* Official Royal Ludo Logo Palette & Gradients */
+  --gold-primary: #facc15;
+  --gold-dark: #ca8a04;
+  --gold-gradient: linear-gradient(135deg, #facc15 0%, #eab308 50%, #ca8a04 100%);
+  
+  --red-primary: #ef4444;
+  --red-gradient: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%);
+  
+  --blue-primary: #3b82f6;
+  --blue-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
+  
+  --green-primary: #22c55e;
+  --green-gradient: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #15803d 100%);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 body {
@@ -26,10 +39,13 @@ body {
   padding: 0;
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(251, 191, 36, 0.1) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.15) 0px, transparent 40%),
+    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 40%),
+    radial-gradient(at 0% 100%, rgba(239, 68, 68, 0.12) 0px, transparent 40%),
+    radial-gradient(at 100% 100%, rgba(34, 197, 94, 0.12) 0px, transparent 40%);
   color: #f8fafc;
   overflow-x: hidden;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
 ::-webkit-scrollbar {
@@ -37,22 +53,63 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: #0a0c16;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: var(--gold-primary);
 }
 
+/* Chrome Autofill Override - Prevents White Box Issues */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0d1527 inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Input Fields Overhaul */
+input, select, textarea, button {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+.custom-input {
+  background-color: #0d1527 !important;
+  border: 1px solid rgba(250, 204, 21, 0.35) !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  width: 100%;
+}
+
+.custom-input:focus {
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25) !important;
+  background-color: #131d36 !important;
+}
+
+.custom-input::placeholder {
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+/* Glass Panels & Cards */
 .glass-panel {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(19, 25, 46, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.7);
 }
 
 .card-hover {
@@ -60,167 +117,164 @@ body {
 }
 .card-hover:hover {
   transform: translateY(-3px);
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 15px 35px -8px rgba(99, 102, 241, 0.25);
+  border-color: rgba(250, 204, 21, 0.45);
+  box-shadow: 0 16px 38px -8px rgba(250, 204, 21, 0.25);
 }
 
-.custom-input {
-  background-color: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border-radius: 12px;
-  padding: 0.65rem 0.95rem;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  outline: none;
-}
-.custom-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-  background-color: #1e293b;
+/* Gradient Variant Cards */
+.card-gold-border {
+  border: 1px solid rgba(250, 204, 21, 0.35) !important;
+  box-shadow: 0 10px 30px -10px rgba(250, 204, 21, 0.15) !important;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: #ffffff;
-  font-weight: 700;
-  border-radius: 12px;
-  padding: 0.65rem 1.35rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+.card-blue-border {
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.15) !important;
 }
 
-.btn-gold {
-  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-  color: #0f172a;
-  font-weight: 800;
-  border-radius: 12px;
-  padding: 0.65rem 1.35rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 18px rgba(251, 191, 36, 0.35);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.card-green-border {
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+  box-shadow: 0 10px 30px -10px rgba(34, 197, 94, 0.15) !important;
+}
+
+.card-red-border {
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Logo Theme Buttons */
+.btn-primary, .btn-gold {
+  background: var(--gold-gradient) !important;
+  color: #0a0c16 !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1.35rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 18px rgba(250, 204, 21, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-size: 0.9375rem !important;
+}
+.btn-primary:hover, .btn-gold:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 24px rgba(250, 204, 21, 0.5) !important;
+}
+
+.btn-blue {
+  background: var(--blue-gradient) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1.35rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
 }
 
 .btn-secondary {
-  background-color: #1e293b;
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-weight: 600;
-  border-radius: 12px;
-  padding: 0.65rem 1.35rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  background-color: #1a2238 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1.35rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
 }
 .btn-secondary:hover {
-  background-color: #334155;
-  color: #ffffff;
+  background-color: #242f4d !important;
+  color: #ffffff !important;
+  border-color: rgba(250, 204, 21, 0.35) !important;
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-  color: #ffffff;
-  font-weight: 700;
-  border-radius: 12px;
-  padding: 0.65rem 1.35rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  background: var(--red-gradient) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1.35rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #ffffff;
-  font-weight: 700;
-  border-radius: 12px;
-  padding: 0.65rem 1.35rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  background: var(--green-gradient) !important;
+  color: #0a0c16 !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1.35rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 18px rgba(34, 197, 94, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
 }
 
-/* Badges */
-.badge-indigo {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
+/* Badges with Quad Colors */
 .badge-gold {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.35);
   padding: 0.25rem 0.625rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
 }
 
 .badge-emerald {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
   padding: 0.25rem 0.625rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
 }
 
 .badge-rose {
-  background: rgba(244, 63, 94, 0.15);
+  background: rgba(239, 68, 68, 0.15);
   color: #f87171;
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.35);
   padding: 0.25rem 0.625rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
 }
 
 .badge-cyan {
-  background: rgba(6, 182, 212, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
   padding: 0.25rem 0.625rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -251,13 +305,13 @@ body {
   transition: background-color 0.15s ease;
 }
 .table-row-hover:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(250, 204, 21, 0.04);
 }
 
-/* Custom SweetAlert2 Dark Indigo Styling */
+/* SweetAlert2 Logo Theme Styling */
 .swal2-glass-popup {
-  background: #0f172a !important;
-  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+  background: #13192e !important;
+  border: 1px solid rgba(250, 204, 21, 0.4) !important;
   border-radius: 24px !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9) !important;
@@ -270,9 +324,9 @@ body {
 }
 
 .swal2-gold-confirm {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-  color: #ffffff !important;
-  font-weight: 700 !important;
+  background: var(--gold-gradient) !important;
+  color: #0a0c16 !important;
+  font-weight: 800 !important;
   border-radius: 12px !important;
   padding: 0.65rem 1.5rem !important;
   border: none !important;
@@ -288,8 +342,8 @@ body {
 }
 
 .swal2-custom-input {
-  background-color: #0b0f19 !important;
-  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  background-color: #0a0c16 !important;
+  border: 1px solid rgba(250, 204, 21, 0.3) !important;
   color: #ffffff !important;
   border-radius: 12px !important;
 }

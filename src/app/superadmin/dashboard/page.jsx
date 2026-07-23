@@ -12,6 +12,8 @@ import GameSettingsView from '@/components/views/GameSettingsView';
 import AuditLogsView from '@/components/views/AuditLogsView';
 import { apiFetch } from '@/services/api';
 
+export const dynamic = 'force-dynamic';
+
 export default function SuperadminDashboardPage() {
   const router = useRouter();
   const [admin, setAdmin] = useState(null);
@@ -19,6 +21,7 @@ export default function SuperadminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState({ disputes: 0, withdrawals: 0 });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('royal_admin_token');
@@ -48,7 +51,7 @@ export default function SuperadminDashboardPage() {
           withdrawals: res.data.pending.withdrawals || 0
         });
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleLogout = () => {
@@ -59,14 +62,14 @@ export default function SuperadminDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#060913', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#0a0c16', color: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
         Authenticating Superadmin Session...
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#060913', color: '#f3f4f6' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0a0c16', color: '#f8fafc' }}>
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -74,6 +77,7 @@ export default function SuperadminDashboardPage() {
         pendingCounts={pendingCounts}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        collapsed={collapsed}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -81,6 +85,8 @@ export default function SuperadminDashboardPage() {
           admin={admin}
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
           onLogout={handleLogout}
         />
 

@@ -37,10 +37,10 @@ export default function DashboardView() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: '0 0 0.375rem 0' }}>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: '0 0 0.375rem 0' }}>
             System Dashboard Overview
           </h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', margin: 0 }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>
             Real-time platform telemetry, user totals, financial balances, and live dispute queues.
           </p>
         </div>
@@ -55,10 +55,10 @@ export default function DashboardView() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-        <div className="glass-panel card-hover" style={{ borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+        <div className="glass-panel card-hover card-blue-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Total Registered Users
               </span>
               <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
@@ -69,13 +69,13 @@ export default function DashboardView() {
               width: '46px',
               height: '46px',
               borderRadius: '14px',
-              backgroundColor: 'rgba(99, 102, 241, 0.15)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
+              background: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(59, 130, 246, 0.35)'
             }}>
-              <Users size={24} color="#818cf8" />
+              <Users size={24} color="#ffffff" />
             </div>
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#34d399', fontWeight: 700 }}>
@@ -83,13 +83,13 @@ export default function DashboardView() {
           </div>
         </div>
 
-        <div className="glass-panel card-hover" style={{ borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+        <div className="glass-panel card-hover card-green-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Platform Revenue (GGR)
               </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#34d399', marginTop: '0.375rem', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#4ade80', marginTop: '0.375rem', lineHeight: 1.1 }}>
                 ₹{financials?.ggrRs || 0}
               </div>
             </div>
@@ -97,13 +97,13 @@ export default function DashboardView() {
               width: '46px',
               height: '46px',
               borderRadius: '14px',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(34, 197, 94, 0.35)'
             }}>
-              <DollarSign size={24} color="#10b981" />
+              <DollarSign size={24} color="#0a0c16" />
             </div>
           </div>
           <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
@@ -111,13 +111,13 @@ export default function DashboardView() {
           </div>
         </div>
 
-        <div className="glass-panel card-hover" style={{ borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(251, 191, 36, 0.25)' }}>
+        <div className="glass-panel card-hover card-gold-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#facc15', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Pending Match Disputes
               </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: pending?.disputes > 0 ? '#fbbf24' : '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: pending?.disputes > 0 ? '#facc15' : '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
                 {pending?.disputes || 0}
               </div>
             </div>
@@ -125,13 +125,13 @@ export default function DashboardView() {
               width: '46px',
               height: '46px',
               borderRadius: '14px',
-              backgroundColor: 'rgba(251, 191, 36, 0.15)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
+              background: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(250, 204, 21, 0.35)'
             }}>
-              <AlertTriangle size={24} color="#fbbf24" />
+              <AlertTriangle size={24} color="#0a0c16" />
             </div>
           </div>
           <div style={{ marginTop: '1rem' }}>
@@ -141,10 +141,10 @@ export default function DashboardView() {
           </div>
         </div>
 
-        <div className="glass-panel card-hover" style={{ borderRadius: '20px', padding: '1.5rem', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+        <div className="glass-panel card-hover card-red-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Pending Cashout Queue
               </span>
               <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
@@ -155,13 +155,13 @@ export default function DashboardView() {
               width: '46px',
               height: '46px',
               borderRadius: '14px',
-              backgroundColor: 'rgba(244, 63, 94, 0.15)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
+              background: 'linear-gradient(135deg, #f87171 0%, #dc2626 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(239, 68, 68, 0.35)'
             }}>
-              <ArrowUpRight size={24} color="#f43f5e" />
+              <ArrowUpRight size={24} color="#ffffff" />
             </div>
           </div>
           <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#f87171' }}>
@@ -172,43 +172,43 @@ export default function DashboardView() {
 
       <div className="glass-panel" style={{ borderRadius: '20px', padding: '1.75rem', marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <Wallet size={22} color="#fbbf24" />
+          <Wallet size={22} color="#facc15" />
           System Financial Ledger & User Sub-Balances
         </h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', borderRadius: '14px' }}>
+          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(59, 130, 246, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Total User Deposits
             </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#38bdf8', marginTop: '0.375rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#60a5fa', marginTop: '0.375rem' }}>
               ₹{financials?.totalDepositsRs || 0}
             </div>
           </div>
 
-          <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', borderRadius: '14px' }}>
+          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Processed Cashouts
             </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f43f5e', marginTop: '0.375rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f87171', marginTop: '0.375rem' }}>
               ₹{financials?.totalWithdrawalsRs || 0}
             </div>
           </div>
 
-          <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', borderRadius: '14px' }}>
+          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(34, 197, 94, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               User Winning Balances
             </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#34d399', marginTop: '0.375rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#4ade80', marginTop: '0.375rem' }}>
               ₹{financials?.walletBalancesRs?.winning || 0}
             </div>
           </div>
 
-          <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', borderRadius: '14px' }}>
+          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(250, 204, 21, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               User Bonus Balances
             </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fbbf24', marginTop: '0.375rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#facc15', marginTop: '0.375rem' }}>
               ₹{financials?.walletBalancesRs?.bonus || 0}
             </div>
           </div>

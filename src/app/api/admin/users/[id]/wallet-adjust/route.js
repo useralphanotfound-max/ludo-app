@@ -6,6 +6,8 @@ import { Transaction } from '@/lib/models/Transaction';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 import { getClientIp } from '@/lib/ipHelper';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req, { params }) {
   try {
     await connectDB();

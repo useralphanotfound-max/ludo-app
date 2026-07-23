@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     await connectDB();

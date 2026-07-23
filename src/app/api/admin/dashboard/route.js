@@ -9,6 +9,8 @@ import { Dispute } from '@/lib/models/Dispute';
 import { WithdrawalRequest } from '@/lib/models/WithdrawalRequest';
 import { GameSettings } from '@/lib/models/GameSettings';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     await connectDB();

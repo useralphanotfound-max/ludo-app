@@ -4,6 +4,8 @@ import { User } from '@/lib/models/User';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 import { getClientIp } from '@/lib/ipHelper';
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(req, { params }) {
   try {
     await connectDB();

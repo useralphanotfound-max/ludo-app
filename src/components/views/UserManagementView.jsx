@@ -124,7 +124,7 @@ export default function UserManagementView() {
       <div className="glass-panel" style={{ borderRadius: '20px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
           <thead>
-            <tr style={{ backgroundColor: '#0f172a', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#818cf8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <tr style={{ backgroundColor: '#0f1322', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#facc15', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <th style={{ padding: '1rem 1.25rem' }}>User Handle</th>
               <th style={{ padding: '1rem 1.25rem' }}>Mobile</th>
               <th style={{ padding: '1rem 1.25rem' }}>Deposit Bal</th>
@@ -147,7 +147,7 @@ export default function UserManagementView() {
               <tr key={user.id} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                 <td style={{ padding: '1rem 1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src={user.avatarUrl} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid #6366f1' }} />
+                    <img src={user.avatarUrl} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #facc15' }} />
                     <div>
                       <div style={{ fontWeight: 800, color: '#ffffff' }}>{user.username}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ref: {user.referralCode}</div>
@@ -155,9 +155,9 @@ export default function UserManagementView() {
                   </div>
                 </td>
                 <td style={{ padding: '1rem 1.25rem', color: '#cbd5e1', fontWeight: 600 }}>{user.mobile}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#38bdf8', fontWeight: 800 }}>₹{user.wallet.depositBalanceRs}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#34d399', fontWeight: 800 }}>₹{user.wallet.winningBalanceRs}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#fbbf24', fontWeight: 800 }}>₹{user.wallet.bonusBalanceRs}</td>
+                <td style={{ padding: '1rem 1.25rem', color: '#60a5fa', fontWeight: 800 }}>₹{user.wallet.depositBalanceRs}</td>
+                <td style={{ padding: '1rem 1.25rem', color: '#4ade80', fontWeight: 800 }}>₹{user.wallet.winningBalanceRs}</td>
+                <td style={{ padding: '1rem 1.25rem', color: '#facc15', fontWeight: 800 }}>₹{user.wallet.bonusBalanceRs}</td>
                 <td style={{ padding: '1rem 1.25rem' }}>
                   <span className={user.status === 'BANNED' ? 'badge-rose' : 'badge-emerald'}>
                     {user.status}
@@ -170,7 +170,7 @@ export default function UserManagementView() {
                       className="btn-secondary"
                       style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
                     >
-                      <Wallet size={14} color="#fbbf24" />
+                      <Wallet size={14} color="#facc15" />
                       <span>Adjust Wallet</span>
                     </button>
 
@@ -182,8 +182,8 @@ export default function UserManagementView() {
                         fontSize: '0.75rem',
                         borderRadius: '8px',
                         border: 'none',
-                        backgroundColor: user.status === 'BANNED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
-                        color: user.status === 'BANNED' ? '#34d399' : '#f87171',
+                        backgroundColor: user.status === 'BANNED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: user.status === 'BANNED' ? '#4ade80' : '#f87171',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'inline-flex',
@@ -210,7 +210,7 @@ export default function UserManagementView() {
 
       {modalUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div className="animate-modal" style={{ width: '100%', maxWidth: '480px', backgroundColor: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '24px', padding: '2rem' }}>
+          <div className="animate-modal" style={{ width: '100%', maxWidth: '480px', backgroundColor: '#13192e', border: '1px solid rgba(250, 204, 21, 0.4)', borderRadius: '24px', padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                 Adjust Wallet — {modalUser.username}
@@ -222,8 +222,8 @@ export default function UserManagementView() {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Action Type</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setActionType('CREDIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'CREDIT' ? '#10b981' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'CREDIT' ? 'rgba(16,185,129,0.15)' : 'transparent', color: actionType === 'CREDIT' ? '#34d399' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>CREDIT (+)</button>
-                  <button type="button" onClick={() => setActionType('DEBIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'DEBIT' ? '#f43f5e' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'DEBIT' ? 'rgba(244,63,94,0.15)' : 'transparent', color: actionType === 'DEBIT' ? '#f87171' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>DEBIT (-)</button>
+                  <button type="button" onClick={() => setActionType('CREDIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'CREDIT' ? '#22c55e' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'CREDIT' ? 'rgba(34,197,94,0.2)' : 'transparent', color: actionType === 'CREDIT' ? '#4ade80' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>CREDIT (+)</button>
+                  <button type="button" onClick={() => setActionType('DEBIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'DEBIT' ? '#ef4444' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'DEBIT' ? 'rgba(239,68,68,0.2)' : 'transparent', color: actionType === 'DEBIT' ? '#f87171' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>DEBIT (-)</button>
                 </div>
               </div>
 
@@ -248,7 +248,7 @@ export default function UserManagementView() {
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setModalUser(null)} className="btn-secondary">Cancel</button>
-                <button type="submit" disabled={actionLoading} className="btn-primary">
+                <button type="submit" disabled={actionLoading} className="btn-gold">
                   {actionLoading ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
