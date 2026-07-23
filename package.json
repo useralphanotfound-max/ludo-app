@@ -1,36 +1,24 @@
 {
   "name": "royal-ludo-app",
   "version": "1.0.0",
-  "description": "Royal Ludo Backend API & Superadmin Panel",
-  "main": "src/backend/server.js",
+  "description": "Royal Ludo Next.js Platform (Mobile APIs & Superadmin Portal)",
+  "private": true,
   "type": "module",
   "scripts": {
-    "server": "node src/backend/server.js",
-    "seed": "node src/backend/scripts/seed.js",
-    "build:client": "vite build",
-    "dev:client": "vite",
-    "start": "node src/backend/server.js",
-    "dev": "concurrently \"node src/backend/server.js\" \"vite\""
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "seed": "node src/scripts/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.395.0",
     "mongoose": "^8.4.1",
-    "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
+    "next": "^14.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "lucide-react": "^0.395.0",
-    "request-ip": "^3.3.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "concurrently": "^8.2.2",
-    "vite": "^5.2.13"
+    "request-ip": "^3.3.0",
+    "sweetalert2": "^11.26.25"
   }
 }

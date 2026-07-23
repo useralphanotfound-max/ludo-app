@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Settings, Save, AlertTriangle, ToggleLeft, ToggleRight, ShieldAlert, Sliders } from 'lucide-react';
-import { apiFetch } from '../../services/api';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Settings, Save, AlertOctagon, Check } from 'lucide-react';
+import { apiFetch } from '@/services/api';
+import { showSuccess, showError } from '@/lib/swal';
 
 export default function GameSettingsView() {
   const [settings, setSettings] = useState({
@@ -10,19 +13,17 @@ export default function GameSettingsView() {
     minWithdrawRs: 100,
     maxWithdrawRs: 25000,
     maintenanceMode: false,
-    maintenanceMessage: 'Royal Ludo is undergoing scheduled maintenance.',
+    maintenanceMessage: 'Royal Ludo is undergoing maintenance. Back soon!',
     forceUpdateVersion: '1.0.0'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
-    setLoading(true);
     try {
       const res = await apiFetch('/admin/settings');
       if (res.status && res.data) {
@@ -38,170 +39,82 @@ export default function GameSettingsView() {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
+
     try {
       const res = await apiFetch('/admin/settings', 'PUT', settings);
       if (res.status) {
-        setMessage('✅ System game settings saved successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        showSuccess('Settings Saved!', 'Game commission and system limits updated successfully.');
       }
     } catch (err) {
-      setMessage(`❌ ${err.message}`);
+      showError('Update Failed', err.message || 'Failed to update system settings');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return <div style={{ color: '#94a3b8', padding: '3rem', textAlign: 'center' }}>Loading System Settings...</div>;
-  }
-
   return (
-    <div style={{ maxWidth: '760px' }}>
+    <div>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: '0 0 0.375rem 0' }}>
-          Platform Game Settings
+          System Game Settings
         </h1>
         <p style={{ color: '#94a3b8', fontSize: '0.875rem', margin: 0 }}>
-          Configure financial rules, platform commission %, deposit/withdrawal bounds, and emergency maintenance mode.
+          Configure platform commission, deposit/cashout limits, app force update version, and maintenance mode.
         </p>
       </div>
 
-      {message && (
-        <div style={{ padding: '0.875rem 1.25rem', borderRadius: '12px', backgroundColor: '#090d16', color: '#f59e0b', fontSize: '0.875rem', marginBottom: '1.5rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-          {message}
-        </div>
-      )}
-
       <form onSubmit={handleSave}>
-        {/* Financial Rules */}
-        <div className="glass-panel" style={{ borderRadius: '16px', padding: '1.75rem', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-            <Sliders size={20} color="#f59e0b" />
-            Financial & Commission Rules
-          </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div className="glass-panel" style={{ borderRadius: '16px', padding: '1.75rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Settings size={20} color="#f59e0b" />
+              Commission & Deposit Limits
+            </h3>
 
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-              Platform Commission Percentage (%)
-            </label>
-            <input
-              type="number"
-              value={settings.platformCommissionPct}
-              onChange={(e) => setSettings({ ...settings, platformCommissionPct: parseFloat(e.target.value) })}
-              className="custom-input"
-              style={{ width: '100%' }}
-            />
-            <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
-              Deducted from match prize pool (e.g., 10% on ₹1,000 entry fee = ₹100 platform fee)
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-                Min Deposit (₹)
-              </label>
-              <input
-                type="number"
-                value={settings.minDepositRs}
-                onChange={(e) => setSettings({ ...settings, minDepositRs: parseInt(e.target.value) })}
-                className="custom-input"
-                style={{ width: '100%' }}
-              />
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Platform Match Commission (%)</label>
+              <input type="number" value={settings.platformCommissionPct} onChange={(e) => setSettings({ ...settings, platformCommissionPct: parseFloat(e.target.value) })} className="custom-input" style={{ width: '100%' }} />
             </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Minimum Deposit (₹)</label>
+              <input type="number" value={settings.minDepositRs} onChange={(e) => setSettings({ ...settings, minDepositRs: parseFloat(e.target.value) })} className="custom-input" style={{ width: '100%' }} />
+            </div>
+
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-                Max Deposit (₹)
-              </label>
-              <input
-                type="number"
-                value={settings.maxDepositRs}
-                onChange={(e) => setSettings({ ...settings, maxDepositRs: parseInt(e.target.value) })}
-                className="custom-input"
-                style={{ width: '100%' }}
-              />
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Maximum Deposit (₹)</label>
+              <input type="number" value={settings.maxDepositRs} onChange={(e) => setSettings({ ...settings, maxDepositRs: parseFloat(e.target.value) })} className="custom-input" style={{ width: '100%' }} />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-                Min Withdrawal (₹)
+          <div className="glass-panel" style={{ borderRadius: '16px', padding: '1.75rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertOctagon size={20} color="#f43f5e" />
+              Maintenance & App Version
+            </h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={settings.maintenanceMode} onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#f59e0b' }} />
+                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: settings.maintenanceMode ? '#f87171' : '#ffffff' }}>Enable Maintenance Mode</span>
               </label>
-              <input
-                type="number"
-                value={settings.minWithdrawRs}
-                onChange={(e) => setSettings({ ...settings, minWithdrawRs: parseInt(e.target.value) })}
-                className="custom-input"
-                style={{ width: '100%' }}
-              />
             </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Maintenance Message</label>
+              <input type="text" value={settings.maintenanceMessage} onChange={(e) => setSettings({ ...settings, maintenanceMessage: e.target.value })} className="custom-input" style={{ width: '100%' }} />
+            </div>
+
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-                Max Withdrawal (₹)
-              </label>
-              <input
-                type="number"
-                value={settings.maxWithdrawRs}
-                onChange={(e) => setSettings({ ...settings, maxWithdrawRs: parseInt(e.target.value) })}
-                className="custom-input"
-                style={{ width: '100%' }}
-              />
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Force Update App Version</label>
+              <input type="text" value={settings.forceUpdateVersion} onChange={(e) => setSettings({ ...settings, forceUpdateVersion: e.target.value })} className="custom-input" style={{ width: '100%' }} />
             </div>
           </div>
         </div>
 
-        {/* Maintenance & App Control */}
-        <div className="glass-panel" style={{ borderRadius: '16px', padding: '1.75rem', marginBottom: '1.75rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-            <ShieldAlert size={20} color="#f43f5e" />
-            System Maintenance & App Version Control
-          </h2>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', backgroundColor: '#090d16', border: '1px solid rgba(255,255,255,0.06)', padding: '1.25rem', borderRadius: '12px' }}>
-            <div>
-              <div style={{ fontWeight: 800, color: '#ffffff' }}>Maintenance Mode Switch</div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Block mobile app logins & match creations during updates</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
-              className={settings.maintenanceMode ? 'btn-danger' : 'btn-secondary'}
-            >
-              {settings.maintenanceMode ? '🚨 BLOCKING APP LOGINS' : '✅ NORMAL SYSTEM'}
-            </button>
-          </div>
-
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-              Maintenance Announcement Message
-            </label>
-            <input
-              type="text"
-              value={settings.maintenanceMessage}
-              onChange={(e) => setSettings({ ...settings, maintenanceMessage: e.target.value })}
-              className="custom-input"
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.5rem' }}>
-              Force Update Minimum Version
-            </label>
-            <input
-              type="text"
-              value={settings.forceUpdateVersion}
-              onChange={(e) => setSettings({ ...settings, forceUpdateVersion: e.target.value })}
-              className="custom-input"
-              style={{ width: '100%' }}
-            />
-          </div>
-        </div>
-
-        <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '0.75rem 2.25rem', fontSize: '1rem' }}>
-          <Save size={18} /> {saving ? 'Saving Config...' : 'Save All Settings'}
+        <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
+          <Save size={20} />
+          {saving ? 'Saving Changes...' : 'Save System Settings'}
         </button>
       </form>
     </div>
