@@ -1,0 +1,350 @@
+{
+  "info": {
+    "title": "Royal Ludo Mobile App & Superadmin API Collection",
+    "version": "1.0.0",
+    "description": "Production-Ready REST API Specification for Royal Ludo Real-Money Gaming Platform.",
+    "baseUrl": "http://localhost:3000/api",
+    "superadminLoginUrl": "http://localhost:3000/superadmin/login",
+    "standardHeaders": {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": "Bearer <JWT_TOKEN>"
+    }
+  },
+  "modules": [
+    {
+      "name": "1. Authentication",
+      "endpoints": [
+        {
+          "name": "Register User",
+          "method": "POST",
+          "path": "/auth/register",
+          "authRequired": false,
+          "description": "Creates user account, hashes password, initializes wallet sub-balances (₹100 deposit + ₹50 bonus).",
+          "requestBody": {
+            "username": "kingplayer",
+            "mobile": "9876543210",
+            "password": "Royal@123",
+            "referralCode": "ROYAL50"
+          },
+          "sampleResponse200": {
+            "status": true,
+            "message": "Account created successfully",
+            "data": {
+              "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              "user": {
+                "id": "66a01234567890abcdef1111",
+                "username": "kingplayer",
+                "mobile": "9876543210",
+                "avatarUrl": "https://api.dicebear.com/7.x/bottts/svg?seed=kingplayer",
+                "referralCode": "RLA8192"
+              }
+            }
+          }
+        },
+        {
+          "name": "User Login",
+          "method": "POST",
+          "path": "/auth/login",
+          "authRequired": false,
+          "description": "Authenticates user via mobile and password, updates IP address in DB.",
+          "requestBody": {
+            "mobile": "9876543210",
+            "password": "Royal@123"
+          },
+          "sampleResponse200": {
+            "status": true,
+            "message": "Login successful",
+            "data": {
+              "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              "user": {
+                "id": "66a01234567890abcdef1111",
+                "username": "kingplayer",
+                "mobile": "9876543210",
+                "role": "USER",
+                "wallet": {
+                  "depositBalance": 50000,
+                  "winningBalance": 125000,
+                  "bonusBalance": 2500,
+                  "totalBalance": 177500
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Mobile Dashboard",
+      "endpoints": [
+        {
+          "name": "Get Mobile Dashboard",
+          "method": "GET",
+          "path": "/dashboard",
+          "authRequired": false,
+          "description": "Aggregated mobile home screen data (wallet summary, promo banners, active rooms, top 3 leaderboard).",
+          "sampleResponse200": {
+            "status": true,
+            "message": "Dashboard loaded",
+            "data": {
+              "user": {
+                "username": "kingplayer",
+                "avatarUrl": "https://api.dicebear.com/7.x/bottts/svg?seed=kingplayer"
+              },
+              "wallet": {
+                "depositBalance": 500,
+                "winningBalance": 1250,
+                "bonusBalance": 25,
+                "availableBalance": 1775
+              },
+              "banners": [
+                {
+                  "id": "b1",
+                  "title": "Royal Tournament Season 1",
+                  "imageUrl": "https://picsum.photos/800/300?random=1",
+                  "deeplink": "royalludo://promo/1"
+                }
+              ],
+              "activeMatches": [
+                {
+                  "roomId": "66a01234567890abcdef2222",
+                  "roomCode": "882910",
+                  "mode": "CLASSIC",
+                  "entryFeeRs": 500,
+                  "playersJoined": 1,
+                  "playersMax": 2
+                }
+              ],
+              "leaderboardTop3": [
+                { "rank": 1, "username": "RoyalKing99", "winningsRs": 12500 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. User Profile & Wallet",
+      "endpoints": [
+        {
+          "name": "Get User Profile",
+          "method": "GET",
+          "path": "/user/profile",
+          "authRequired": true,
+          "description": "Returns full user profile, win/loss stats, referral code, and wallet sub-balances.",
+          "sampleResponse200": {
+            "status": true,
+            "message": "User profile retrieved",
+            "data": {
+              "id": "66a01234567890abcdef1111",
+              "username": "kingplayer",
+              "mobile": "9876543210",
+              "referralCode": "RLA8192",
+              "stats": { "played": 24, "won": 18, "lost": 6, "totalWinningsPaise": 250000 },
+              "wallet": {
+                "depositBalanceRs": 500,
+                "winningBalanceRs": 1250,
+                "bonusBalanceRs": 25,
+                "totalBalanceRs": 1775
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Wallet Balances",
+          "method": "GET",
+          "path": "/wallet",
+          "authRequired": true,
+          "description": "Fetches typed sub-balances (deposit, winning, bonus, locked).",
+          "sampleResponse200": {
+            "status": true,
+            "message": "Wallet retrieved",
+            "data": {
+              "depositBalanceRs": 500,
+              "winningBalanceRs": 1250,
+              "bonusBalanceRs": 25,
+              "lockedBalanceRs": 0,
+              "totalBalanceRs": 1775
+            }
+          }
+        },
+        {
+          "name": "Initiate Deposit",
+          "method": "POST",
+          "path": "/wallet/deposit/initiate",
+          "authRequired": true,
+          "description": "Credits user deposit wallet and logs ledger transaction.",
+          "requestBody": {
+            "amountRs": 500,
+            "paymentMethod": "UPI"
+          },
+          "sampleResponse200": {
+            "status": true,
+            "message": "Deposit successful",
+            "data": {
+              "transactionId": "66a01234567890abcdef3333",
+              "amountRs": 500,
+              "updatedDepositBalanceRs": 1000
+            }
+          }
+        },
+        {
+          "name": "Initiate Withdrawal (100% Net Payout, No TDS, No KYC)",
+          "method": "POST",
+          "path": "/wallet/withdraw/initiate",
+          "authRequired": true,
+          "description": "Submits cashout request for 100% net requested amount and locks funds pending superadmin review.",
+          "requestBody": {
+            "amountRs": 500,
+            "payoutMethod": "UPI",
+            "upiId": "kingplayer@upi",
+            "accountHolderName": "King Player"
+          },
+          "sampleResponse200": {
+            "status": true,
+            "message": "Withdrawal request submitted for processing",
+            "data": {
+              "withdrawalId": "66a01234567890abcdef4444",
+              "amountRs": 500,
+              "status": "PENDING_APPROVAL"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Game Rooms",
+      "endpoints": [
+        {
+          "name": "Get Available Rooms",
+          "method": "GET",
+          "path": "/rooms",
+          "authRequired": false,
+          "description": "Fetches list of public rooms waiting for players.",
+          "sampleResponse200": {
+            "status": true,
+            "message": "Rooms retrieved",
+            "data": [
+              {
+                "_id": "66a01234567890abcdef5555",
+                "gameMode": "CLASSIC",
+                "playerCount": 2,
+                "entryFee": 50000,
+                "roomCode": "882910",
+                "status": "WAITING"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Create Room",
+          "method": "POST",
+          "path": "/rooms",
+          "authRequired": true,
+          "description": "Creates a game room, locks entry fee, and generates a 6-digit room code.",
+          "requestBody": {
+            "gameMode": "CLASSIC",
+            "playerCount": 2,
+            "entryFeeRs": 500,
+            "isPrivate": false
+          },
+          "sampleResponse201": {
+            "status": true,
+            "message": "Room created successfully",
+            "data": {
+              "_id": "66a01234567890abcdef6666",
+              "gameMode": "CLASSIC",
+              "entryFee": 50000,
+              "roomCode": "391048",
+              "status": "WAITING"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Superadmin Portal APIs",
+      "endpoints": [
+        {
+          "name": "Superadmin Login",
+          "method": "POST",
+          "path": "/admin/login",
+          "authRequired": false,
+          "description": "Authenticates superadmin and logs exact IP address into AdminAuditLog.",
+          "requestBody": {
+            "username": "admin@royalludo.com",
+            "password": "RoyalAdmin@123"
+          },
+          "sampleResponse200": {
+            "status": true,
+            "message": "Superadmin authenticated successfully",
+            "data": {
+              "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              "admin": {
+                "id": "66a01234567890abcdef0000",
+                "username": "admin@royalludo.com",
+                "role": "SUPERADMIN",
+                "lastLoginIp": "127.0.0.1 (Localhost)"
+              }
+            }
+          }
+        },
+        {
+          "name": "Superadmin Dashboard Metrics",
+          "method": "GET",
+          "path": "/admin/dashboard",
+          "authRequired": true,
+          "description": "Returns DAU, GGR, total deposits, cashouts, pending disputes, and live room counts."
+        },
+        {
+          "name": "Superadmin Users List",
+          "method": "GET",
+          "path": "/admin/users?search=",
+          "authRequired": true,
+          "description": "Search user registry with sub-balance breakdowns."
+        },
+        {
+          "name": "Superadmin Manual Wallet Adjust",
+          "method": "POST",
+          "path": "/admin/users/:id/wallet-adjust",
+          "authRequired": true,
+          "description": "Manually credits or debits user deposit/winning/bonus sub-balance with audit note and IP log.",
+          "requestBody": {
+            "amountRs": 1000,
+            "subBalanceType": "deposit",
+            "actionType": "CREDIT",
+            "reason": "Promotional bonus credit"
+          }
+        },
+        {
+          "name": "Superadmin Process Withdrawal",
+          "method": "POST",
+          "path": "/admin/withdrawals/:id/process",
+          "authRequired": true,
+          "description": "Approves payout (100% net amount) or rejects and refunds to user wallet.",
+          "requestBody": {
+            "action": "APPROVE"
+          }
+        },
+        {
+          "name": "Superadmin Resolve Match Dispute",
+          "method": "POST",
+          "path": "/admin/disputes/:id/resolve",
+          "authRequired": true,
+          "description": "Awards match prize pool to Player 1 or Player 2 or refunds both based on screenshot verification.",
+          "requestBody": {
+            "decision": "P1_WIN",
+            "adminNotes": "Verified screenshot: Player 1 completed board first."
+          }
+        },
+        {
+          "name": "Superadmin IP Audit Logs",
+          "method": "GET",
+          "path": "/admin/audit-logs",
+          "authRequired": true,
+          "description": "Returns stream of superadmin audit logs containing exact IP addresses and timestamps."
+        }
+      ]
+    }
+  ]
+}
