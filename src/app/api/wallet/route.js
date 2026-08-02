@@ -3,13 +3,15 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Wallet } from '@/lib/models/Wallet';
 
+import { getAuthUser } from '@/lib/authHelper';
+
 export async function GET(req) {
   try {
     await connectDB();
-    const user = await User.findOne({ role: 'USER' });
-    if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ status: false, message: 'Unauthorized access. Please login.' }, { status: 401 });
 
-    const wallet = await Wallet.findOne({ userId: user._id });
+    const wallet = await Wallet.findOne({ userId: user._id }).lean();
 
     return NextResponse.json({
       status: true,

@@ -1,7 +1,7 @@
 import dns from 'dns';
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (e) {}
+} catch (e) { }
 
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -15,7 +15,11 @@ import { WithdrawalRequest } from '../lib/models/WithdrawalRequest.js';
 import { GameSettings } from '../lib/models/GameSettings.js';
 import { AdminAuditLog } from '../lib/models/AdminAuditLog.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://royaluseralpha83993:royaluseralphapass83993@cluster0.xmyjibo.mongodb.net/royalludo?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+}
 
 const seedDatabase = async () => {
   try {

@@ -12,8 +12,6 @@ import GameSettingsView from '@/components/views/GameSettingsView';
 import AuditLogsView from '@/components/views/AuditLogsView';
 import { apiFetch } from '@/services/api';
 
-export const dynamic = 'force-dynamic';
-
 export default function SuperadminDashboardPage() {
   const router = useRouter();
   const [admin, setAdmin] = useState(null);

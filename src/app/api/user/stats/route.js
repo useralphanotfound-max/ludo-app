@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 
+import { getAuthUser } from '@/lib/authHelper';
+
 export async function GET(req) {
   try {
     await connectDB();
-    const user = await User.findOne({ role: 'USER' });
+    const user = await getAuthUser(req);
 
-    if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
+    if (!user) return NextResponse.json({ status: false, message: 'Unauthorized access. Please login.' }, { status: 401 });
 
     const winRate = user.stats.played > 0 ? Math.round((user.stats.won / user.stats.played) * 100) : 0;
 

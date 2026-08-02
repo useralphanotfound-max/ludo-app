@@ -8,7 +8,38 @@ try {
   // Ignore if setting DNS servers fails in specific restrictive environments
 }
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://royaluseralpha83993:royaluseralphapass83993@ac-kggnzrc-shard-00-00.xmyjibo.mongodb.net:27017,ac-kggnzrc-shard-00-01.xmyjibo.mongodb.net:27017,ac-kggnzrc-shard-00-02.xmyjibo.mongodb.net:27017/royalludo?ssl=true&replicaSet=atlas-kggnzrc-shard-0&authSource=admin&retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+}
+
+async function resolveMongodbSrv(uri) {
+  if (!uri.startsWith('mongodb+srv://')) {
+    return uri;
+  }
+  try {
+    const urlMatch = uri.match(/^mongodb\+srv:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)?(.*)$/);
+    if (!urlMatch) return uri;
+
+    const [_, user, pass, host, db, query] = urlMatch;
+    const resolver = new dns.promises.Resolver();
+    resolver.setServers(['8.8.8.8', '1.1.1.1']);
+    
+    const addresses = await resolver.resolveSrv(`_mongodb._tcp.${host}`);
+    if (!addresses || addresses.length === 0) return uri;
+
+    const nodeAddresses = addresses.map(addr => `${addr.name}:${addr.port}`).join(',');
+    const cleanQuery = query || '';
+    const sslOpt = cleanQuery.includes('ssl=') ? '' : '&ssl=true';
+    const authSrc = cleanQuery.includes('authSource=') ? '' : '&authSource=admin';
+    const retryW = cleanQuery.includes('retryWrites=') ? '' : '&retryWrites=true';
+    
+    return `mongodb://${user}:${pass}@${nodeAddresses}/${db || ''}${cleanQuery}${sslOpt}${authSrc}${retryW}`;
+  } catch (e) {
+    return uri;
+  }
+}
 
 let cached = global.mongoose;
 
@@ -27,7 +58,8 @@ export async function connectDB() {
       connectTimeoutMS: 15000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
+    cached.promise = resolveMongodbSrv(MONGODB_URI)
+      .then((resolvedUri) => mongoose.connect(resolvedUri, opts))
       .then((mongooseInstance) => {
         console.log(`[MongoDB Atlas] Connected to ${mongooseInstance.connection.host}`);
         return mongooseInstance;

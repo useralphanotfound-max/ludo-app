@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '@/lib/db';
+import mongoose from 'mongoose';
 import { User } from '@/lib/models/User';
 import { Wallet } from '@/lib/models/Wallet';
 
@@ -18,11 +19,18 @@ export async function POST(req) {
       return NextResponse.json({ status: false, message: 'Invalid OTP code entered', errorCode: 'OTP_INVALID' }, { status: 422 });
     }
 
-    const user = await User.findOne({ role: 'USER' });
-    if (user) {
-      user.status = 'ACTIVE';
-      await user.save();
+    const userId = otpSessionId.replace('session_', '');
+    let user;
+    if (mongoose.isValidObjectId(userId)) {
+      user = await User.findById(userId);
     }
+
+    if (!user) {
+      return NextResponse.json({ status: false, message: 'Verification session not found or expired' }, { status: 404 });
+    }
+
+    user.status = 'ACTIVE';
+    await user.save();
 
     const token = jwt.sign(
       { id: user?._id || 'demo', role: 'USER', username: user?.username || 'user' },

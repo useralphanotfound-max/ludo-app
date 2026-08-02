@@ -17,7 +17,7 @@ export async function POST(req) {
       return NextResponse.json({ status: false, message: 'Mobile number not registered' }, { status: 404 });
     }
 
-    const otpSessionId = 'session_' + Math.random().toString(36).substring(2, 12);
+    const otpSessionId = `session_${user._id}`;
 
     return NextResponse.json({
       status: true,

@@ -7,12 +7,14 @@ import { Wallet } from '@/lib/models/Wallet';
 export async function GET(req) {
   try {
     await connectDB();
-    const rooms = await Room.find({ status: 'WAITING' }).sort({ createdAt: -1 });
+    const rooms = await Room.find({ status: 'WAITING' }).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ status: true, message: 'Rooms retrieved', data: rooms });
   } catch (error) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }
 }
+
+import { getAuthUser } from '@/lib/authHelper';
 
 export async function POST(req) {
   try {
@@ -21,8 +23,8 @@ export async function POST(req) {
     const { gameMode = 'CLASSIC', playerCount = 2, entryFeeRs = 100, isPrivate = false } = body;
     const entryFeePaise = Math.round(entryFeeRs * 100);
 
-    const user = await User.findOne({ role: 'USER' });
-    if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ status: false, message: 'Unauthorized access. Please login.' }, { status: 401 });
 
     const wallet = await Wallet.findOne({ userId: user._id });
     if (!wallet || (wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance) < entryFeePaise) {

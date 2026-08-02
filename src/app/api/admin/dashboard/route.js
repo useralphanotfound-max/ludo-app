@@ -15,78 +15,99 @@ export async function GET(req) {
   try {
     await connectDB();
 
-    const totalUsers = await User.countDocuments({ role: 'USER' });
-    const activeUsers = await User.countDocuments({ role: 'USER', status: 'ACTIVE' });
-    const bannedUsers = await User.countDocuments({ status: 'BANNED' });
-
-    const pendingDisputes = await Dispute.countDocuments({ status: 'PENDING_ADMIN_REVIEW' });
-    const pendingWithdrawalsCount = await WithdrawalRequest.countDocuments({ status: 'PENDING_APPROVAL' });
-
-    const activeRooms = await Room.countDocuments({ status: { $in: ['WAITING', 'IN_PROGRESS', 'MATCHED'] } });
-    const activeMatches = await Match.countDocuments({ status: { $in: ['SEARCHING', 'ACTIVE'] } });
-
-    const walletAgg = await Wallet.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalDeposit: { $sum: '$depositBalance' },
-          totalWinning: { $sum: '$winningBalance' },
-          totalBonus: { $sum: '$bonusBalance' },
-          totalLocked: { $sum: '$lockedBalance' }
+    const [
+      totalUsers,
+      activeUsers,
+      bannedUsers,
+      pendingDisputes,
+      pendingWithdrawalsCount,
+      activeRooms,
+      activeMatches,
+      walletAgg,
+      depositAgg,
+      withdrawalAgg,
+      pendingWithdrawalAgg,
+      ggrAgg,
+      settings
+    ] = await Promise.all([
+      User.countDocuments({ role: 'USER' }),
+      User.countDocuments({ role: 'USER', status: 'ACTIVE' }),
+      User.countDocuments({ status: 'BANNED' }),
+      Dispute.countDocuments({ status: 'PENDING_ADMIN_REVIEW' }),
+      WithdrawalRequest.countDocuments({ status: 'PENDING_APPROVAL' }),
+      Room.countDocuments({ status: { $in: ['WAITING', 'IN_PROGRESS', 'MATCHED'] } }),
+      Match.countDocuments({ status: { $in: ['SEARCHING', 'ACTIVE'] } }),
+      Wallet.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalDeposit: { $sum: '$depositBalance' },
+            totalWinning: { $sum: '$winningBalance' },
+            totalBonus: { $sum: '$bonusBalance' },
+            totalLocked: { $sum: '$lockedBalance' }
+          }
         }
-      }
+      ]),
+      Transaction.aggregate([
+        { $match: { type: 'DEPOSIT', status: 'SUCCESS' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      WithdrawalRequest.aggregate([
+        { $match: { status: 'APPROVED' } },
+        { $group: { _id: null, total: { $sum: '$amountPaise' } } }
+      ]),
+      WithdrawalRequest.aggregate([
+        { $match: { status: 'PENDING_APPROVAL' } },
+        { $group: { _id: null, total: { $sum: '$amountPaise' } } }
+      ]),
+      Match.aggregate([
+        { $match: { status: 'COMPLETED' } },
+        {
+          $group: {
+            _id: null,
+            totalGGR: {
+              $sum: {
+                $multiply: [
+                  { $ifNull: ['$entryFee', 0] },
+                  { $size: { $ifNull: ['$players', []] } },
+                  0.1
+                ]
+              }
+            }
+          }
+        }
+      ]),
+      GameSettings.findOne({ key: 'global_settings' }).lean()
     ]);
 
-    const walletTotals = walletAgg[0] || { totalDeposit: 0, totalWinning: 0, totalBonus: 0, totalLocked: 0 };
-
-    const depositAgg = await Transaction.aggregate([
-      { $match: { type: 'DEPOSIT', status: 'SUCCESS' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    const totalDepositsPaise = depositAgg[0]?.total || 0;
-
-    const withdrawalAgg = await WithdrawalRequest.aggregate([
-      { $match: { status: 'APPROVED' } },
-      { $group: { _id: null, total: { $sum: '$amountPaise' } } }
-    ]);
-    const totalWithdrawalsPaise = withdrawalAgg[0]?.total || 0;
-
-    const pendingWithdrawalAgg = await WithdrawalRequest.aggregate([
-      { $match: { status: 'PENDING_APPROVAL' } },
-      { $group: { _id: null, total: { $sum: '$amountPaise' } } }
-    ]);
-    const pendingWithdrawalsPaise = pendingWithdrawalAgg[0]?.total || 0;
-
-    const completedMatches = await Match.find({ status: 'COMPLETED' });
-    let totalGGRPaise = 0;
-    completedMatches.forEach(m => {
-      totalGGRPaise += Math.round(m.entryFee * m.players.length * 0.1);
-    });
-
-    const settings = await GameSettings.findOne({ key: 'global_settings' }) || {};
+    const walletTotals = walletAgg?.[0] || { totalDeposit: 0, totalWinning: 0, totalBonus: 0, totalLocked: 0 };
+    const totalDepositsPaise = depositAgg?.[0]?.total || 0;
+    const totalWithdrawalsPaise = withdrawalAgg?.[0]?.total || 0;
+    const pendingWithdrawalsPaise = pendingWithdrawalAgg?.[0]?.total || 0;
+    const totalGGRPaise = Math.round(ggrAgg?.[0]?.totalGGR || 0);
 
     return NextResponse.json({
       status: true,
       message: 'Dashboard metrics retrieved',
       data: {
-        users: { total: totalUsers, active: activeUsers, banned: bannedUsers },
-        pending: { disputes: pendingDisputes, withdrawals: pendingWithdrawalsCount },
-        live: { rooms: activeRooms, matches: activeMatches },
+        users: { total: totalUsers || 0, active: activeUsers || 0, banned: bannedUsers || 0 },
+        pending: { disputes: pendingDisputes || 0, withdrawals: pendingWithdrawalsCount || 0 },
+        live: { rooms: activeRooms || 0, matches: activeMatches || 0 },
         financials: {
           totalDepositsRs: Math.round(totalDepositsPaise / 100),
           totalWithdrawalsRs: Math.round(totalWithdrawalsPaise / 100),
           pendingWithdrawalsRs: Math.round(pendingWithdrawalsPaise / 100),
           ggrRs: Math.round(totalGGRPaise / 100),
           walletBalancesRs: {
-            deposit: Math.round(walletTotals.totalDeposit / 100),
-            winning: Math.round(walletTotals.totalWinning / 100),
-            bonus: Math.round(walletTotals.totalBonus / 100),
-            locked: Math.round(walletTotals.totalLocked / 100)
+            deposit: Math.round((walletTotals.totalDeposit || 0) / 100),
+            winning: Math.round((walletTotals.totalWinning || 0) / 100),
+            bonus: Math.round((walletTotals.totalBonus || 0) / 100),
+            locked: Math.round((walletTotals.totalLocked || 0) / 100)
           }
         },
         settings: {
-          commissionPct: settings.platformCommissionPct || 10,
-          maintenanceMode: settings.maintenanceMode || false
+          commissionPct: settings?.platformCommissionPct ?? 10,
+          maintenanceMode: settings?.maintenanceMode ?? false
         }
       }
     });

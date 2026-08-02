@@ -13,7 +13,7 @@ export async function GET(req) {
     const query = {};
     if (status) query.status = status;
 
-    const withdrawals = await WithdrawalRequest.find(query).sort({ createdAt: -1 });
+    const withdrawals = await WithdrawalRequest.find(query).sort({ createdAt: -1 }).lean();
 
     const data = withdrawals.map(w => ({
       id: w._id,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 
@@ -16,11 +17,18 @@ export async function POST(req) {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(newPassword, salt);
 
-    const user = await User.findOne({ role: 'USER' });
-    if (user) {
-      user.passwordHash = passwordHash;
-      await user.save();
+    const userId = otpSessionId ? otpSessionId.replace('session_', '') : '';
+    let user;
+    if (mongoose.isValidObjectId(userId)) {
+      user = await User.findById(userId);
     }
+
+    if (!user) {
+      return NextResponse.json({ status: false, message: 'Reset password session not found or expired' }, { status: 404 });
+    }
+
+    user.passwordHash = passwordHash;
+    await user.save();
 
     return NextResponse.json({
       status: true,

@@ -4,8 +4,8 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   mobile: { type: String, required: true, unique: true, trim: true },
   passwordHash: { type: String, required: true },
-  role: { type: String, enum: ['USER', 'ADMIN', 'SUPERADMIN'], default: 'USER' },
-  status: { type: String, enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BANNED', 'DELETED'], default: 'ACTIVE' },
+  role: { type: String, enum: ['USER', 'ADMIN', 'SUPERADMIN'], default: 'USER', index: true },
+  status: { type: String, enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BANNED', 'DELETED'], default: 'ACTIVE', index: true },
   avatarUrl: { type: String, default: 'https://api.dicebear.com/7.x/bottts/svg?seed=royal_ludo' },
   referralCode: { type: String, required: true, unique: true },
   referredBy: { type: String, default: null },
@@ -24,5 +24,7 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: { type: Date, default: Date.now },
   lastLoginIp: { type: String, default: '127.0.0.1' }
 }, { timestamps: true });
+
+userSchema.index({ createdAt: -1 });
 
 export const User = mongoose.models.User || mongoose.model('User', userSchema);

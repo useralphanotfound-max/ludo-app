@@ -8,7 +8,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'daily';
 
-    const users = await User.find({ role: 'USER' }).sort({ 'stats.totalWinningsPaise': -1 }).limit(10);
+    const users = await User.find({ role: 'USER' }).select('username avatarUrl stats').sort({ 'stats.totalWinningsPaise': -1 }).limit(10).lean();
 
     const rankings = users.map((u, index) => ({
       rank: index + 1,

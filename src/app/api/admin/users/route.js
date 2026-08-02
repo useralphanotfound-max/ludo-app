@@ -22,9 +22,9 @@ export async function GET(req) {
       ];
     }
 
-    const users = await User.find(query).sort({ createdAt: -1 }).limit(100);
+    const users = await User.find(query).sort({ createdAt: -1 }).limit(100).lean();
     const userIds = users.map(u => u._id);
-    const wallets = await Wallet.find({ userId: { $in: userIds } });
+    const wallets = await Wallet.find({ userId: { $in: userIds } }).lean();
     const walletMap = {};
     wallets.forEach(w => walletMap[w.userId.toString()] = w);
 

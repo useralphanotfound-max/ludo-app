@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-
-export const dynamic = 'force-dynamic';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SuperadminLoginPage() {
   const [username, setUsername] = useState('admin@royalludo.com');
   const [password, setPassword] = useState('RoyalAdmin@123');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -147,25 +147,50 @@ export default function SuperadminLoginPage() {
             <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 800, color: '#cbd5e1', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              required
-              style={{
-                width: '100%',
-                backgroundColor: '#0d1527',
-                border: '1.5px solid rgba(250, 204, 21, 0.4)',
-                borderRadius: '14px',
-                padding: '0.85rem 1rem',
-                color: '#ffffff',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                outline: 'none',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                required
+                style={{
+                  width: '100%',
+                  backgroundColor: '#0d1527',
+                  border: '1.5px solid rgba(250, 204, 21, 0.4)',
+                  borderRadius: '14px',
+                  padding: '0.85rem 3rem 0.85rem 1rem',
+                  color: '#ffffff',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px',
+                  transition: 'color 0.2s'
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={20} color="#facc15" /> : <Eye size={20} color="#94a3b8" />}
+              </button>
+            </div>
           </div>
 
           {/* Login Button */}

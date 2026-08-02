@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, User, AlertCircle, Sparkles, Crown, KeyRound, Globe } from 'lucide-react';
+import { ShieldCheck, Lock, User, AlertCircle, Sparkles, Crown, KeyRound, Globe, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function AdminLoginView({ onLoginSuccess }) {
   const [username, setUsername] = useState('admin@royalludo.com');
   const [password, setPassword] = useState('RoyalAdmin@123');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -151,7 +152,7 @@ export default function AdminLoginView({ onLoginSuccess }) {
             <div style={{ position: 'relative' }}>
               <KeyRound size={18} color="#64748b" style={{ position: 'absolute', left: '14px', top: '13px' }} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -160,7 +161,7 @@ export default function AdminLoginView({ onLoginSuccess }) {
                   backgroundColor: '#0b1120',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
-                  padding: '0.75rem 1rem 0.75rem 2.75rem',
+                  padding: '0.75rem 2.75rem 0.75rem 2.75rem',
                   color: '#ffffff',
                   fontSize: '0.95rem',
                   outline: 'none',
@@ -168,6 +169,28 @@ export default function AdminLoginView({ onLoginSuccess }) {
                 }}
                 placeholder="••••••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px'
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} color="#f59e0b" /> : <Eye size={18} color="#64748b" />}
+              </button>
             </div>
           </div>
 

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const disputeSchema = new mongoose.Schema({
-  matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true },
-  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' },
+  matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true, index: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', index: true },
   player1: {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     username: { type: String },
@@ -17,11 +17,13 @@ const disputeSchema = new mongoose.Schema({
     screenshotUrl: { type: String, default: '' },
     submittedAt: { type: Date, default: Date.now }
   },
-  status: { type: String, enum: ['PENDING_ADMIN_REVIEW', 'RESOLVED_P1_WIN', 'RESOLVED_P2_WIN', 'REFUNDED', 'REJECTED'], default: 'PENDING_ADMIN_REVIEW' },
+  status: { type: String, enum: ['PENDING_ADMIN_REVIEW', 'RESOLVED_P1_WIN', 'RESOLVED_P2_WIN', 'REFUNDED', 'REJECTED'], default: 'PENDING_ADMIN_REVIEW', index: true },
   resolvedByAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   resolvedByAdminUsername: { type: String, default: '' },
   adminNotes: { type: String, default: '' },
   resolvedAt: { type: Date, default: null }
 }, { timestamps: true });
+
+disputeSchema.index({ createdAt: -1 });
 
 export const Dispute = mongoose.models.Dispute || mongoose.model('Dispute', disputeSchema);
