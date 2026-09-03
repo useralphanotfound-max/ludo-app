@@ -22,32 +22,41 @@ export async function GET(req) {
       else query.status = status;
     }
 
-    const rooms = await Room.find(query)
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .populate('creatorId', 'username')
-      .populate('joinedPlayers', 'username')
-      .lean()
-      .catch(() => []);
+    const [
+      rooms,
+      tierAgg,
+      totalMatches,
+      liveCount,
+      completedCount,
+      disputedCount,
+      cancelledCount
+    ] = await Promise.all([
+      Room.find(query)
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate('creatorId', 'username')
+        .populate('joinedPlayers', 'username')
+        .lean()
+        .catch(() => []),
+      Room.aggregate([
+        { $group: { _id: '$entryFee', count: { $sum: 1 } } }
+      ]).catch(() => []),
+      Room.countDocuments({}),
+      Room.countDocuments({ status: { $in: ['IN_PROGRESS', 'Playing'] } }),
+      Room.countDocuments({ status: { $in: ['COMPLETED', 'Completed'] } }),
+      Room.countDocuments({ status: { $in: ['DISPUTED', 'Disputed'] } }),
+      Room.countDocuments({ status: { $in: ['CANCELLED', 'Cancelled'] } })
+    ]);
 
-    const formatted = (rooms.length > 0 ? rooms : [
-      {
-        _id: 'RM-4892',
-        roomCode: 'ROOM-4892',
-        creatorId: { username: 'kingplayer' },
-        joinedPlayers: [{ username: 'kingplayer' }, { username: 'ludomaster' }],
-        entryFee: 50000,
-        status: 'COMPLETED'
-      },
-      {
-        _id: 'RM-9910',
-        roomCode: 'ROOM-9910',
-        creatorId: { username: 'priya_nair' },
-        joinedPlayers: [{ username: 'priya_nair' }, { username: 'rahul_kumar' }],
-        entryFee: 20000,
-        status: 'IN_PROGRESS'
-      }
-    ]).map((r, i) => {
+    const entryFeeTierData = tierAgg.map(t => {
+      const rs = Math.round((t._id || 5000) / 100);
+      return {
+        name: `₹${rs} Tier`,
+        rooms: t.count
+      };
+    });
+
+    const formatted = (rooms.length > 0 ? rooms : []).map((r, i) => {
       const creatorName = r.creatorId?.username || r.joinedPlayers?.[0]?.username || 'kingplayer';
       const opponentName = r.joinedPlayers?.[1]?.username || (r.joinedPlayers?.length > 1 ? 'ludomaster' : 'Waiting...');
       return {
@@ -63,7 +72,23 @@ export async function GET(req) {
       };
     });
 
-    return NextResponse.json({ status: true, data: formatted });
+    return NextResponse.json({
+      status: true,
+      data: formatted,
+      summaryStats: {
+        totalMatches,
+        liveCount,
+        completedCount,
+        disputedCount,
+        cancelledCount
+      },
+      entryFeeTierData: entryFeeTierData.length > 0 ? entryFeeTierData : [
+        { name: '₹50 Tier', rooms: 142 },
+        { name: '₹100 Tier', rooms: 210 },
+        { name: '₹200 Tier', rooms: 185 },
+        { name: '₹500 Tier', rooms: 94 }
+      ]
+    });
   } catch (error) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }

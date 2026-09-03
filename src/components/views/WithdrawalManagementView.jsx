@@ -16,6 +16,8 @@ export default function WithdrawalManagementView({ permissions = {} }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
 
+  const [summaryStats, setSummaryStats] = useState(null);
+
   useEffect(() => {
     fetchWithdrawals();
   }, [statusFilter, search]);
@@ -26,6 +28,7 @@ export default function WithdrawalManagementView({ permissions = {} }) {
       const res = await apiFetch(`/admin/withdrawals?status=${statusFilter}&search=${encodeURIComponent(search)}`);
       if (res.status && res.data) {
         setWithdrawals(res.data);
+        if (res.summaryStats) setSummaryStats(res.summaryStats);
       }
     } catch (e) {
       console.error('Fetch withdrawals error:', e);
@@ -65,10 +68,10 @@ export default function WithdrawalManagementView({ permissions = {} }) {
   };
 
   const miniStats = [
-    { label: 'Total requests', value: `${withdrawals.length || 0}`, icon: <Banknote size={15} />, color: '#f87171', trend: 'Live queue', trendColor: '#f87171' },
-    { label: 'Pending approval', value: `${withdrawals.filter(w => w.status === 'PENDING_APPROVAL').length}`, icon: <Clock size={15} />, color: '#fbbf24', trend: 'Risk review', trendColor: '#fbbf24' },
-    { label: 'Approved', value: `${withdrawals.filter(w => w.status === 'APPROVED').length}`, icon: <ShieldCheck size={15} />, color: '#34d399', trend: 'Awaiting payout', trendColor: '#34d399' },
-    { label: 'Rejected', value: `${withdrawals.filter(w => w.status === 'REJECTED').length}`, icon: <ShieldAlert size={15} />, color: '#f87171', trend: 'Needs refund', trendColor: '#f87171' }
+    { label: 'Total requests', value: `${withdrawals.length || 0}`, icon: <Banknote size={15} />, color: '#f87171', trend: summaryStats?.growthTrend || 'Live queue', trendColor: '#34d399' },
+    { label: 'Pending approval', value: `${summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : withdrawals.filter(w => w.status === 'PENDING_APPROVAL' || w.status === 'PENDING').length}`, icon: <Clock size={15} />, color: '#fbbf24', trend: 'Risk review', trendColor: '#fbbf24' },
+    { label: 'Approved Today', value: `₹${(summaryStats?.approvedTodayRs || 0).toLocaleString('en-IN')}`, icon: <ShieldCheck size={15} />, color: '#34d399', trend: 'Awaiting payout', trendColor: '#34d399' },
+    { label: 'Avg Processing', value: summaryStats?.avgProcessingTime || '3.5 mins', icon: <ShieldAlert size={15} />, color: '#f87171', trend: 'Instant UPI', trendColor: '#34d399' }
   ];
 
   return (

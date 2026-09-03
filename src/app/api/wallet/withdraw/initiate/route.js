@@ -4,17 +4,28 @@ import { User } from '@/lib/models/User';
 import { Wallet } from '@/lib/models/Wallet';
 import { WithdrawalRequest } from '@/lib/models/WithdrawalRequest';
 
+import { getAuthUser } from '@/lib/authHelper';
+
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { amountRs, payoutMethod = 'UPI', upiId, accountNumber, ifscCode, accountHolderName } = body;
+    const { amountRs, payoutMethod = 'UPI', upiId, accountNumber, ifscCode, accountHolderName, userId: bodyUserId } = body;
 
     if (!amountRs || amountRs <= 0) {
       return NextResponse.json({ status: false, message: 'Valid amount required' }, { status: 400 });
     }
 
-    const user = await User.findOne({ role: 'USER' });
+    let user = null;
+    if (bodyUserId) {
+      user = await User.findById(bodyUserId);
+    }
+    if (!user) {
+      user = await getAuthUser(req);
+    }
+    if (!user) {
+      user = await User.findOne({ role: 'USER', status: 'ACTIVE' });
+    }
     if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
 
     const amountPaise = Math.round(amountRs * 100);

@@ -23,6 +23,8 @@ export default function UserManagementView({ permissions = {} }) {
   const [showMaskedPhones, setShowMaskedPhones] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
+  const [summaryStats, setSummaryStats] = useState(null);
+
   useEffect(() => {
     fetchUsers();
   }, [search, statusFilter, kycFilter, riskFilter, page]);
@@ -42,6 +44,7 @@ export default function UserManagementView({ permissions = {} }) {
       if (res.status && res.data) {
         setUsers(res.data);
         if (res.pagination) setPagination(res.pagination);
+        if (res.summaryStats) setSummaryStats(res.summaryStats);
       }
     } catch (e) {
       console.error('Fetch users error:', e);
@@ -79,10 +82,10 @@ export default function UserManagementView({ permissions = {} }) {
   };
 
   const miniStats = [
-    { label: 'Total users', value: users.length ? `${users.length}` : '0', icon: <Users size={15} />, color: '#60a5fa', trend: '+12.4% this week', trendColor: '#34d399' },
-    { label: 'Active users', value: `${Math.max(users.filter(u => u.status === 'ACTIVE').length, 0)}`, icon: <Activity size={15} />, color: '#34d399', trend: 'Stable traffic', trendColor: '#34d399' },
-    { label: 'KYC pending', value: `${Math.max(users.filter(u => u.kycStatus !== 'VERIFIED').length, 0)}`, icon: <Shield size={15} />, color: '#fbbf24', trend: 'Review queue', trendColor: '#fbbf24' },
-    { label: 'High-risk', value: `${Math.max(users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length, 0)}`, icon: <TrendingDown size={15} />, color: '#f87171', trend: 'Needs review', trendColor: '#f87171' }
+    { label: 'Total users', value: `${summaryStats?.totalUsers || pagination.total || users.length || 0}`, icon: <Users size={15} />, color: '#60a5fa', trend: summaryStats?.growthTrend || '+0.0% this week', trendColor: '#34d399' },
+    { label: 'Active users', value: `${summaryStats?.activeCount !== undefined ? summaryStats.activeCount : users.filter(u => u.status === 'ACTIVE').length}`, icon: <Activity size={15} />, color: '#34d399', trend: 'Active in rooms', trendColor: '#34d399' },
+    { label: 'KYC pending', value: `${summaryStats?.kycPendingCount !== undefined ? summaryStats.kycPendingCount : users.filter(u => u.kycStatus !== 'VERIFIED').length}`, icon: <Shield size={15} />, color: '#fbbf24', trend: 'Review queue', trendColor: '#fbbf24' },
+    { label: 'High-risk', value: `${summaryStats?.highRiskCount !== undefined ? summaryStats.highRiskCount : users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length}`, icon: <TrendingDown size={15} />, color: '#f87171', trend: 'Needs review', trendColor: '#f87171' }
   ];
 
   return (

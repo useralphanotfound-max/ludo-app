@@ -15,6 +15,8 @@ export default function TransactionsLedgerView({ permissions = {} }) {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [search, setSearch] = useState('');
 
+  const [summaryStats, setSummaryStats] = useState(null);
+
   useEffect(() => {
     fetchTransactions();
   }, [typeFilter, search]);
@@ -26,6 +28,7 @@ export default function TransactionsLedgerView({ permissions = {} }) {
       const res = await apiFetch(`/admin/transactions?${query.toString()}`);
       if (res.status && res.data) {
         setTransactions(res.data);
+        if (res.summaryStats) setSummaryStats(res.summaryStats);
       }
     } catch (e) {
       console.error('Fetch transactions error:', e);
@@ -35,10 +38,10 @@ export default function TransactionsLedgerView({ permissions = {} }) {
   };
 
   const miniStats = [
-    { label: 'Volume', value: `₹${(transactions.reduce((sum, t) => sum + Number(t.amountRs || 0), 0) || 0).toLocaleString('en-IN')}`, icon: <DollarSign size={15} />, color: '#34d399', trend: 'Total flow', trendColor: '#34d399' },
-    { label: 'Deposits', value: `${transactions.filter(t => t.type === 'DEPOSIT').length}`, icon: <ArrowDownLeft size={15} />, color: '#60a5fa', trend: 'Inflow', trendColor: '#60a5fa' },
-    { label: 'Withdrawals', value: `${transactions.filter(t => t.type === 'WITHDRAWAL').length}`, icon: <ArrowUpRight size={15} />, color: '#f87171', trend: 'Outflow', trendColor: '#f87171' },
-    { label: 'Confirmed', value: `${transactions.filter(t => t.status === 'SUCCESS').length}`, icon: <ShieldCheck size={15} />, color: '#34d399', trend: 'Risk-cleared', trendColor: '#34d399' }
+    { label: 'Volume', value: `₹${(summaryStats?.totalVolumeRs !== undefined ? summaryStats.totalVolumeRs : transactions.reduce((sum, t) => sum + Number(t.amountRs || 0), 0)).toLocaleString('en-IN')}`, icon: <DollarSign size={15} />, color: '#34d399', trend: summaryStats?.growthTrend || 'Total flow', trendColor: '#34d399' },
+    { label: 'Deposits', value: `${summaryStats?.depositCount !== undefined ? summaryStats.depositCount : transactions.filter(t => t.type === 'DEPOSIT').length}`, icon: <ArrowDownLeft size={15} />, color: '#60a5fa', trend: 'Inflow', trendColor: '#60a5fa' },
+    { label: 'Withdrawals', value: `${summaryStats?.withdrawalCount !== undefined ? summaryStats.withdrawalCount : transactions.filter(t => t.type === 'WITHDRAWAL').length}`, icon: <ArrowUpRight size={15} />, color: '#f87171', trend: 'Outflow', trendColor: '#f87171' },
+    { label: 'Net Liquidity', value: `₹${(summaryStats?.netFlowRs !== undefined ? summaryStats.netFlowRs : 0).toLocaleString('en-IN')}`, icon: <ShieldCheck size={15} />, color: '#34d399', trend: 'Risk-cleared', trendColor: '#34d399' }
   ];
 
   return (

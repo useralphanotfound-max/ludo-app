@@ -27,10 +27,60 @@ export async function GET(req) {
       ];
     }
 
-    const [deposits, totalCount] = await Promise.all([
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+    const [
+      deposits,
+      totalCount,
+      sumAgg,
+      pendingCount,
+      successfulCount,
+      failedCount,
+      methodAgg,
+      thisPeriodAgg,
+      prevPeriodAgg
+    ] = await Promise.all([
       Deposit.find(query).populate('userId', 'username mobile avatarUrl').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      Deposit.countDocuments(query)
+      Deposit.countDocuments(query),
+      Deposit.aggregate([
+        { $match: { status: 'SUCCESSFUL' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      Deposit.countDocuments({ status: 'PENDING' }),
+      Deposit.countDocuments({ status: 'SUCCESSFUL' }),
+      Deposit.countDocuments({ status: 'FAILED' }),
+      Deposit.aggregate([
+        { $group: { _id: '$paymentMethod', count: { $sum: 1 } } }
+      ]),
+      Deposit.aggregate([
+        { $match: { status: 'SUCCESSFUL', createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      Deposit.aggregate([
+        { $match: { status: 'SUCCESSFUL', createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ])
     ]);
+
+    const totalDepositsRs = sumAgg[0] ? Math.round(sumAgg[0].total / 100) : 0;
+    const thisVol = thisPeriodAgg[0]?.total || 0;
+    const prevVol = prevPeriodAgg[0]?.total || 0;
+    let growthPctStr = '+0.0% this month';
+    if (prevVol > 0) {
+      const pct = (((thisVol - prevVol) / prevVol) * 100).toFixed(1);
+      growthPctStr = `${Number(pct) >= 0 ? '+' : ''}${pct}% this month`;
+    } else if (thisVol > 0) {
+      growthPctStr = `+100.0% this month`;
+    }
+
+    const methodColors = { UPI: '#10b981', BANK_TRANSFER: '#3b82f6', QR_CODE: '#f59e0b', CARD: '#8b5cf6' };
+    const methodDonutData = methodAgg.map(m => ({
+      name: m._id || 'UPI',
+      value: m.count,
+      color: methodColors[m._id] || '#10b981'
+    }));
 
     const formatted = deposits.map(d => ({
       id: d._id,
@@ -55,6 +105,16 @@ export async function GET(req) {
     return NextResponse.json({
       status: true,
       message: 'Deposits retrieved',
+      summaryStats: {
+        totalDepositsRs,
+        pendingCount,
+        successfulCount,
+        failedCount,
+        growthTrend: growthPctStr
+      },
+      methodDonutData: methodDonutData.length > 0 ? methodDonutData : [
+        { name: 'UPI Direct', value: 1, color: '#10b981' }
+      ],
       pagination: { total: totalCount, page, limit, totalPages: Math.ceil(totalCount / limit) },
       data: formatted
     });

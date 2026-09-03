@@ -25,8 +25,11 @@ export default function WalletManagementView({ permissions = {} }) {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [walletStats, setWalletStats] = useState(null);
+
   useEffect(() => {
     fetchWalletUsers();
+    fetchWalletStats();
   }, [search]);
 
   const fetchWalletUsers = async () => {
@@ -40,6 +43,17 @@ export default function WalletManagementView({ permissions = {} }) {
       console.error('Wallet users error:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWalletStats = async () => {
+    try {
+      const res = await apiFetch('/admin/wallets');
+      if (res.status && res.data) {
+        setWalletStats(res.data);
+      }
+    } catch (e) {
+      console.error('Wallet stats error:', e);
     }
   };
 
@@ -81,6 +95,7 @@ export default function WalletManagementView({ permissions = {} }) {
         Swal.fire({ title: 'Adjustment Success', text: res.message, icon: 'success', background: '#0f1322', color: '#ffffff' });
         setShowAdjustModal(false);
         fetchWalletUsers();
+        fetchWalletStats();
       }
     } catch (e) {
       Swal.fire({ title: 'Adjustment Failed', text: e.message || 'Failed to execute financial adjustment', icon: 'error', background: '#0f1322', color: '#ffffff' });
@@ -113,6 +128,7 @@ export default function WalletManagementView({ permissions = {} }) {
       if (res.status) {
         Swal.fire({ title: 'Success', text: res.message, icon: 'success', background: '#0f1322', color: '#ffffff' });
         fetchWalletUsers();
+        fetchWalletStats();
       }
     } catch (e) {
       Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#0f1322', color: '#ffffff' });
@@ -120,15 +136,16 @@ export default function WalletManagementView({ permissions = {} }) {
   };
 
   // Calculate Aggregates
-  const totalCashRs = users.reduce((sum, u) => sum + (u.wallet?.depositBalanceRs || 0), 0);
-  const totalWinningRs = users.reduce((sum, u) => sum + (u.wallet?.winningBalanceRs || 0), 0);
-  const totalBonusRs = users.reduce((sum, u) => sum + (u.wallet?.bonusBalanceRs || 0), 0);
+  const totalCashRs = walletStats?.totalCashRs !== undefined ? walletStats.totalCashRs : users.reduce((sum, u) => sum + (u.wallet?.depositBalanceRs || 0), 0);
+  const totalWinningRs = walletStats?.totalWinningRs !== undefined ? walletStats.totalWinningRs : users.reduce((sum, u) => sum + (u.wallet?.winningBalanceRs || 0), 0);
+  const totalBonusRs = walletStats?.totalBonusRs !== undefined ? walletStats.totalBonusRs : users.reduce((sum, u) => sum + (u.wallet?.bonusBalanceRs || 0), 0);
+  const frozenCount = walletStats?.frozenCount !== undefined ? walletStats.frozenCount : users.filter(u => u.isWalletFrozen).length;
 
   const miniStats = [
-    { label: 'Cash pool', value: `₹${totalCashRs.toLocaleString('en-IN')}`, icon: <Coins size={15} />, color: '#34d399', trend: '+₹1.4L today', trendColor: '#34d399' },
+    { label: 'Cash pool', value: `₹${totalCashRs.toLocaleString('en-IN')}`, icon: <Coins size={15} />, color: '#34d399', trend: walletStats?.growthTrend || '+0.0% this week', trendColor: '#34d399' },
     { label: 'Winning pool', value: `₹${totalWinningRs.toLocaleString('en-IN')}`, icon: <TrendingUp size={15} />, color: '#facc15', trend: 'Payout-ready', trendColor: '#facc15' },
     { label: 'Bonus pool', value: `₹${totalBonusRs.toLocaleString('en-IN')}`, icon: <ShieldCheck size={15} />, color: '#c084fc', trend: 'Promos active', trendColor: '#c084fc' },
-    { label: 'Frozen wallets', value: `${users.filter(u => u.isWalletFrozen).length}`, icon: <Lock size={15} />, color: '#f87171', trend: 'Need review', trendColor: '#f87171' }
+    { label: 'Frozen wallets', value: `${frozenCount}`, icon: <Lock size={15} />, color: '#f87171', trend: 'Need review', trendColor: '#f87171' }
   ];
 
   return (

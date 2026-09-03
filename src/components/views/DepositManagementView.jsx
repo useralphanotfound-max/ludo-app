@@ -19,6 +19,8 @@ export default function DepositManagementView({ permissions = {} }) {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [verifyingId, setVerifyingId] = useState(null);
 
+  const [summaryStats, setSummaryStats] = useState(null);
+
   useEffect(() => {
     fetchDeposits();
   }, [statusFilter, search, page]);
@@ -30,6 +32,7 @@ export default function DepositManagementView({ permissions = {} }) {
       if (res.status && res.data) {
         setDeposits(res.data);
         if (res.pagination) setPagination(res.pagination);
+        if (res.summaryStats) setSummaryStats(res.summaryStats);
       }
     } catch (e) {
       console.error('Fetch deposits error:', e);
@@ -40,12 +43,12 @@ export default function DepositManagementView({ permissions = {} }) {
 
   const handleVerifyGateway = async (deposit) => {
     const confirm = await Swal.fire({
-      title: 'Verify Deposit with Gateway Server?',
-      text: `Re-query provider API for Transaction ID: ${deposit.depositId}. If successful, ₹${deposit.amountRs} will be credited to ${deposit.user.username}'s wallet.`,
+      title: 'Verify & Credit Deposit?',
+      text: `Confirm UTR / Deposit ID: ${deposit.depositId}. If verified, ₹${deposit.amountRs} will be credited to ${deposit.user.username}'s wallet.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#facc15',
-      confirmButtonText: 'Verify Gateway Webhook',
+      confirmButtonText: 'Approve & Credit Deposit',
       background: '#0f1322',
       color: '#ffffff'
     });
@@ -68,17 +71,17 @@ export default function DepositManagementView({ permissions = {} }) {
         fetchDeposits();
       }
     } catch (e) {
-      Swal.fire({ title: 'Verification Failed', text: e.message || 'Error communicating with payment gateway', icon: 'error', background: '#0f1322', color: '#ffffff' });
+      Swal.fire({ title: 'Verification Failed', text: e.message || 'Error verifying deposit', icon: 'error', background: '#0f1322', color: '#ffffff' });
     } finally {
       setVerifyingId(null);
     }
   };
 
   const miniStats = [
-    { label: 'Total deposits', value: `₹${(deposits.reduce((sum, item) => sum + Number(item.amountRs || 0), 0) || 0).toLocaleString('en-IN')}`, icon: <CircleDollarSign size={15} />, color: '#34d399', trend: 'Daily inflow', trendColor: '#34d399' },
-    { label: 'Pending review', value: `${deposits.filter(d => d.status === 'PENDING').length}`, icon: <Clock size={15} />, color: '#fbbf24', trend: 'Needs verification', trendColor: '#fbbf24' },
-    { label: 'Successful', value: `${deposits.filter(d => d.status === 'SUCCESSFUL').length}`, icon: <CheckCircle size={15} />, color: '#34d399', trend: 'Gateway confirmed', trendColor: '#34d399' },
-    { label: 'Failed', value: `${deposits.filter(d => d.status === 'FAILED').length}`, icon: <XCircle size={15} />, color: '#f87171', trend: 'Needs refund', trendColor: '#f87171' }
+    { label: 'Total deposits', value: `₹${(summaryStats?.totalDepositsRs !== undefined ? summaryStats.totalDepositsRs : deposits.reduce((sum, item) => sum + Number(item.amountRs || 0), 0)).toLocaleString('en-IN')}`, icon: <CircleDollarSign size={15} />, color: '#34d399', trend: summaryStats?.growthTrend || 'Daily inflow', trendColor: '#34d399' },
+    { label: 'Pending review', value: `${summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : deposits.filter(d => d.status === 'PENDING').length}`, icon: <Clock size={15} />, color: '#fbbf24', trend: 'Needs verification', trendColor: '#fbbf24' },
+    { label: 'Successful', value: `${summaryStats?.successfulCount !== undefined ? summaryStats.successfulCount : deposits.filter(d => d.status === 'SUCCESSFUL').length}`, icon: <CheckCircle size={15} />, color: '#34d399', trend: 'Verified & credited', trendColor: '#34d399' },
+    { label: 'Failed', value: `${summaryStats?.failedCount !== undefined ? summaryStats.failedCount : deposits.filter(d => d.status === 'FAILED').length}`, icon: <XCircle size={15} />, color: '#f87171', trend: 'Needs review', trendColor: '#f87171' }
   ];
 
   return (
@@ -215,7 +218,7 @@ export default function DepositManagementView({ permissions = {} }) {
                           cursor: 'pointer'
                         }}
                       >
-                        {verifyingId === d.id ? 'Checking Gateway...' : '⚡ Verify Gateway'}
+                        {verifyingId === d.id ? 'Verifying...' : '⚡ Approve Deposit'}
                       </button>
                     )}
                   </td>

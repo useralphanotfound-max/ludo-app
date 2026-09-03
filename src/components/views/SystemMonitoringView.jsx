@@ -35,7 +35,7 @@ export default function SystemMonitoringView({ permissions = {} }) {
     { label: 'API health', value: health?.apiStatus || 'HEALTHY', icon: <Gauge size={15} />, color: '#34d399', trend: `${health?.apiLatencyMs || 18} ms`, trendColor: '#34d399' },
     { label: 'DB health', value: health?.dbStatus || 'CONNECTED', icon: <Database size={15} />, color: '#60a5fa', trend: 'Stable', trendColor: '#60a5fa' },
     { label: 'CPU / RAM', value: `${health?.cpuUsagePct || 14}% / ${health?.memoryUsagePct || 32}%`, icon: <Cpu size={15} />, color: '#fbbf24', trend: 'Normal load', trendColor: '#fbbf24' },
-    { label: 'Gateway', value: health?.paymentGatewayStatus || 'OPERATIONAL', icon: <CheckCircle size={15} />, color: '#34d399', trend: 'Webhook active', trendColor: '#34d399' }
+    { label: 'Queue', value: health?.backgroundJobsStatus || 'OPERATIONAL', icon: <CheckCircle size={15} />, color: '#34d399', trend: 'Processor active', trendColor: '#34d399' }
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function SystemMonitoringView({ permissions = {} }) {
       <ModuleConsoleShell
         badge="INFRASTRUCTURE HEALTH"
         title="System operations console"
-        subtitle="Operational health overview for APIs, databases, background jobs, gateways, and third-party services."
+        subtitle="Operational health overview for APIs, databases, background jobs, queues, and internal microservices."
         stats={miniStats}
         actions={[
           { label: 'Sync infrastructure', onClick: fetchHealth, icon: <RefreshCw size={15} />, primary: true }
@@ -92,13 +92,13 @@ export default function SystemMonitoringView({ permissions = {} }) {
 
           <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>PAYMENT GATEWAY</span>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>BACKGROUND WORKERS</span>
               <CheckCircle size={20} color="#34d399" />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#34d399', marginTop: '6px' }}>
-              {health?.paymentGatewayStatus || 'OPERATIONAL'}
+              {health?.backgroundJobsStatus || 'OPERATIONAL'}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '4px' }}>Webhook Engine Active</div>
+            <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '4px' }}>Job Processor Active</div>
           </div>
         </div>
       )}

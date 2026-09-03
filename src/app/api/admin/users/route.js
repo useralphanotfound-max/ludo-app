@@ -43,10 +43,49 @@ export async function GET(req) {
       ];
     }
 
-    const [users, totalCount] = await Promise.all([
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+    const twentyOneDaysAgo = new Date(now.getTime() - 21 * 86400000);
+    const twentyEightDaysAgo = new Date(now.getTime() - 28 * 86400000);
+
+    const [
+      users,
+      totalCount,
+      allDbUsersCount,
+      activeCount,
+      kycPendingCount,
+      highRiskCount,
+      thisPeriodCount,
+      prevPeriodCount,
+      w1Count,
+      w2Count,
+      w3Count,
+      w4Count
+    ] = await Promise.all([
       User.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      User.countDocuments(query)
+      User.countDocuments(query),
+      User.countDocuments({ role: 'USER' }),
+      User.countDocuments({ role: 'USER', status: 'ACTIVE' }),
+      User.countDocuments({ role: 'USER', kycStatus: { $ne: 'VERIFIED' } }),
+      User.countDocuments({ role: 'USER', riskScore: 'HIGH' }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: thirtyDaysAgo } }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: twentyEightDaysAgo, $lt: twentyOneDaysAgo } }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: twentyOneDaysAgo, $lt: fourteenDaysAgo } }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      User.countDocuments({ role: 'USER', createdAt: { $gte: sevenDaysAgo } })
     ]);
+
+    let growthPctStr = '+0.0% this month';
+    if (prevPeriodCount > 0) {
+      const pct = (((thisPeriodCount - prevPeriodCount) / prevPeriodCount) * 100).toFixed(1);
+      growthPctStr = `${Number(pct) >= 0 ? '+' : ''}${pct}% this month`;
+    } else if (thisPeriodCount > 0) {
+      growthPctStr = `+${thisPeriodCount * 100}.0% this month`;
+    }
 
     const userIds = users.map(u => u._id);
 
@@ -63,13 +102,25 @@ export async function GET(req) {
     ]);
 
     const walletMap = {};
-    wallets.forEach(w => walletMap[w.userId.toString()] = w);
+    wallets.forEach(w => {
+      if (w?.userId) {
+        walletMap[w.userId.toString()] = w;
+      }
+    });
 
     const depositMap = {};
-    depositAggs.forEach(d => depositMap[d._id.toString()] = d.total);
+    depositAggs.forEach(d => {
+      if (d?._id) {
+        depositMap[d._id.toString()] = d.total;
+      }
+    });
 
     const withdrawalMap = {};
-    withdrawalAggs.forEach(w => withdrawalMap[w._id.toString()] = w.total);
+    withdrawalAggs.forEach(w => {
+      if (w?._id) {
+        withdrawalMap[w._id.toString()] = w.total;
+      }
+    });
 
     const data = users.map(u => {
       const w = walletMap[u._id.toString()] || {};
@@ -115,6 +166,19 @@ export async function GET(req) {
     return NextResponse.json({
       status: true,
       message: 'Users retrieved',
+      summaryStats: {
+        totalUsers: allDbUsersCount,
+        activeCount,
+        kycPendingCount,
+        highRiskCount,
+        growthTrend: growthPctStr,
+        regTrendData: [
+          { name: 'W1', count: w1Count },
+          { name: 'W2', count: w2Count },
+          { name: 'W3', count: w3Count },
+          { name: 'W4', count: w4Count }
+        ]
+      },
       pagination: {
         total: totalCount,
         page,
