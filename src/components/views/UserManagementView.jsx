@@ -1,267 +1,290 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, UserCheck, UserX, Wallet, Edit3, X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Eye, EyeOff, ShieldCheck, ShieldAlert, Lock, Unlock, RefreshCw, MoreVertical, ChevronLeft, ChevronRight, Users, Shield, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { apiFetch } from '@/services/api';
-import { showSuccess, showError, confirmAction } from '@/lib/swal';
-import LudoLoader from '@/components/common/LudoLoader';
+import UserProfileDrawer from '@/components/views/UserProfileDrawer';
+import Swal from 'sweetalert2';
+import { hasPermission } from '@/lib/rbac';
+import { ModuleConsoleShell, AccessDeniedState } from '@/components/common/ModuleConsoleShell';
 
-export default function UserManagementView() {
+export default function UserManagementView({ permissions = {} }) {
+  if (!hasPermission(permissions, 'users.view')) {
+    return <AccessDeniedState module="Users" permission="users.view" />;
+  }
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [modalUser, setModalUser] = useState(null);
-  const [adjustAmount, setAdjustAmount] = useState('');
-  const [subBalanceType, setSubBalanceType] = useState('deposit');
-  const [actionType, setActionType] = useState('CREDIT');
-  const [reason, setReason] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-  const [togglingUserId, setTogglingUserId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [kycFilter, setKycFilter] = useState('');
+  const [riskFilter, setRiskFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [showMaskedPhones, setShowMaskedPhones] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
-  }, [search]);
+  }, [search, statusFilter, kycFilter, riskFilter, page]);
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      const res = await apiFetch(`/admin/users?search=${encodeURIComponent(search)}`);
-      if (res.status) {
+      setLoading(true);
+      const query = new URLSearchParams({
+        search,
+        status: statusFilter,
+        kycStatus: kycFilter,
+        riskScore: riskFilter,
+        page: page.toString(),
+        limit: '20'
+      });
+      const res = await apiFetch(`/admin/users?${query.toString()}`);
+      if (res.status && res.data) {
         setUsers(res.data);
+        if (res.pagination) setPagination(res.pagination);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error('Fetch users error:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWalletAdjustSubmit = async (e) => {
-    e.preventDefault();
-    if (!adjustAmount || parseFloat(adjustAmount) <= 0 || !reason.trim()) {
-      showError('Validation Error', 'Valid amount in ₹ and audit reason note are required!');
-      return;
-    }
-    setActionLoading(true);
+  const handleStatusChange = async (userId, newStatus) => {
+    const confirm = await Swal.fire({
+      title: `Change status to ${newStatus}?`,
+      text: `User will be marked as ${newStatus}`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: newStatus === 'BANNED' ? '#ef4444' : '#22c55e',
+      confirmButtonText: `Yes, ${newStatus}`,
+      background: '#0f1322',
+      color: '#ffffff'
+    });
+
+    if (!confirm.isConfirmed) return;
 
     try {
-      const res = await apiFetch(`/admin/users/${modalUser.id}/wallet-adjust`, 'POST', {
-        amountRs: parseFloat(adjustAmount),
-        subBalanceType,
-        actionType,
-        reason: reason.trim()
+      const res = await apiFetch(`/admin/users/${userId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: newStatus })
       });
-
       if (res.status) {
-        await showSuccess('Wallet Adjusted!', `Successfully ${actionType.toLowerCase()}ed ₹${adjustAmount} on ${modalUser.username}'s ${subBalanceType} balance.`);
-        setModalUser(null);
-        setAdjustAmount('');
-        setReason('');
+        Swal.fire({ title: 'Status Updated', text: res.message, icon: 'success', background: '#0f1322', color: '#ffffff' });
         fetchUsers();
       }
-    } catch (err) {
-      showError('Wallet Adjustment Failed', err.message || 'Failed to adjust user wallet balance');
-    } finally {
-      setActionLoading(false);
+    } catch (e) {
+      Swal.fire({ title: 'Error', text: e.message || 'Status update failed', icon: 'error', background: '#0f1322', color: '#ffffff' });
     }
   };
 
-  const handleStatusToggle = async (user) => {
-    const isBanning = user.status !== 'BANNED';
-    const actionText = isBanning ? 'Ban User' : 'Unban User';
-
-    const confirmed = await confirmAction(
-      `${actionText}?`,
-      `Are you sure you want to ${actionText.toLowerCase()} user "${user.username}"?`,
-      `Yes, ${actionText}`
-    );
-
-    if (!confirmed) return;
-
-    setTogglingUserId(user.id);
-    try {
-      const res = await apiFetch(`/admin/users/${user.id}/status`, 'PATCH', {
-        status: isBanning ? 'BANNED' : 'ACTIVE',
-        reason: 'Superadmin manual action from console'
-      });
-
-      if (res.status) {
-        await showSuccess('Status Updated', `User ${user.username} is now ${isBanning ? 'BANNED' : 'ACTIVE'}`);
-        fetchUsers();
-      }
-    } catch (err) {
-      showError('Action Failed', err.message || 'Failed to update user status');
-    } finally {
-      setTogglingUserId(null);
-    }
-  };
+  const miniStats = [
+    { label: 'Total users', value: users.length ? `${users.length}` : '0', icon: <Users size={15} />, color: '#60a5fa', trend: '+12.4% this week', trendColor: '#34d399' },
+    { label: 'Active users', value: `${Math.max(users.filter(u => u.status === 'ACTIVE').length, 0)}`, icon: <Activity size={15} />, color: '#34d399', trend: 'Stable traffic', trendColor: '#34d399' },
+    { label: 'KYC pending', value: `${Math.max(users.filter(u => u.kycStatus !== 'VERIFIED').length, 0)}`, icon: <Shield size={15} />, color: '#fbbf24', trend: 'Review queue', trendColor: '#fbbf24' },
+    { label: 'High-risk', value: `${Math.max(users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length, 0)}`, icon: <TrendingDown size={15} />, color: '#f87171', trend: 'Needs review', trendColor: '#f87171' }
+  ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: '0 0 0.375rem 0' }}>
-            User Management & Wallet Control
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', margin: 0 }}>
-            Inspect registered players, check sub-balances, perform manual wallet credits/debits, or ban accounts.
-          </p>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleConsoleShell
+        badge="USER OPERATIONS"
+        title="User control console"
+        subtitle="360° user overview, compliance state, wallet health, and risk monitoring for every player account."
+        stats={miniStats}
+        actions={[
+          { label: 'Mask phone numbers', onClick: () => setShowMaskedPhones((prev) => !prev), icon: showMaskedPhones ? <EyeOff size={15} /> : <Eye size={15} />, primary: false },
+          { label: 'Sync users', onClick: fetchUsers, icon: <RefreshCw size={15} />, primary: true }
+        ]}
+      />
 
-        <div style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
-          <Search size={18} color="#64748b" style={{ position: 'absolute', left: '14px', top: '12px' }} />
+      {/* Filter & Search Bar */}
+      <div style={{ backgroundColor: '#0f1322', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
+          <Search size={16} color="#64748b" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
+            placeholder="Search by Username, Mobile, Referral Code, or User ID..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by username or mobile..."
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="custom-input"
-            style={{ width: '100%', paddingLeft: '2.625rem' }}
+            style={{ paddingLeft: '2.5rem', fontSize: '0.85rem' }}
           />
         </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="custom-input" style={{ width: '140px', fontSize: '0.8rem' }}>
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active Only</option>
+            <option value="PENDING_VERIFICATION">Suspended</option>
+            <option value="BANNED">Banned Only</option>
+          </select>
+
+          <select value={kycFilter} onChange={(e) => { setKycFilter(e.target.value); setPage(1); }} className="custom-input" style={{ width: '140px', fontSize: '0.8rem' }}>
+            <option value="">All KYC States</option>
+            <option value="VERIFIED">KYC Verified</option>
+            <option value="PENDING">KYC Pending</option>
+            <option value="NONE">Unverified</option>
+          </select>
+        </div>
       </div>
 
-      <div className="glass-panel" style={{ borderRadius: '20px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#0f1322', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#facc15', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              <th style={{ padding: '1rem 1.25rem' }}>User Handle</th>
-              <th style={{ padding: '1rem 1.25rem' }}>Mobile</th>
-              <th style={{ padding: '1rem 1.25rem' }}>Deposit Bal</th>
-              <th style={{ padding: '1rem 1.25rem' }}>Winning Bal</th>
-              <th style={{ padding: '1rem 1.25rem' }}>Bonus Bal</th>
-              <th style={{ padding: '1rem 1.25rem' }}>Status</th>
-              <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="7" style={{ padding: '2rem' }}>
-                  <LudoLoader text="Loading Registered Players & Wallet Sub-Balances..." />
-                </td>
+      {/* Users Data Grid Table */}
+      <div style={{ backgroundColor: '#0f1322', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#13192e', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '1rem' }}>User Profile</th>
+                <th style={{ padding: '1rem' }}>Phone Number</th>
+                <th style={{ padding: '1rem' }}>Reg. Date</th>
+                <th style={{ padding: '1rem' }}>KYC State</th>
+                <th style={{ padding: '1rem' }}>Total Wallet</th>
+                <th style={{ padding: '1rem' }}>Deposits</th>
+                <th style={{ padding: '1rem' }}>Cashouts</th>
+                <th style={{ padding: '1rem' }}>Played</th>
+                <th style={{ padding: '1rem' }}>W / L Ratio</th>
+                <th style={{ padding: '1rem' }}>Status</th>
+                <th style={{ padding: '1rem' }}>Risk Score</th>
+                <th style={{ padding: '1rem', textAlign: 'right' }}>Action</th>
               </tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>No users match search query.</td></tr>
-            ) : users.map(user => (
-              <tr key={user.id} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                <td style={{ padding: '1rem 1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src={user.avatarUrl} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #facc15' }} />
-                    <div>
-                      <div style={{ fontWeight: 800, color: '#ffffff' }}>{user.username}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ref: {user.referralCode}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '1rem 1.25rem', color: '#cbd5e1', fontWeight: 600 }}>{user.mobile}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#60a5fa', fontWeight: 800 }}>₹{user.wallet.depositBalanceRs}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#4ade80', fontWeight: 800 }}>₹{user.wallet.winningBalanceRs}</td>
-                <td style={{ padding: '1rem 1.25rem', color: '#facc15', fontWeight: 800 }}>₹{user.wallet.bonusBalanceRs}</td>
-                <td style={{ padding: '1rem 1.25rem' }}>
-                  <span className={user.status === 'BANNED' ? 'badge-rose' : 'badge-emerald'}>
-                    {user.status}
-                  </span>
-                </td>
-                <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => setModalUser(user)}
-                      className="btn-secondary"
-                      style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
-                    >
-                      <Wallet size={14} color="#facc15" />
-                      <span>Adjust Wallet</span>
-                    </button>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={12} style={{ padding: '3rem', textAlign: 'center', color: '#facc15', fontWeight: 800 }}>
+                    Retrieving User Database Intelligence...
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={12} style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                    No users matching the criteria found.
+                  </td>
+                </tr>
+              ) : (
+                users.map(u => (
+                  <tr
+                    key={u.id}
+                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'background 0.2s ease' }}
+                    onClick={() => setSelectedUserId(u.id)}
+                  >
+                    <td style={{ padding: '1rem' }}>
+                      <div style={{ fontWeight: 800, color: '#ffffff' }}>{u.username}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>ID: {u.id}</div>
+                    </td>
+                    <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                      {showMaskedPhones ? u.maskedMobile : u.mobile}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        backgroundColor: u.kycStatus === 'VERIFIED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(250, 204, 21, 0.15)',
+                        color: u.kycStatus === 'VERIFIED' ? '#4ade80' : '#facc15'
+                      }}>
+                        {u.kycStatus}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, color: '#facc15' }}>
+                      ₹{u.wallet?.totalBalanceRs?.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, color: '#4ade80' }}>
+                      ₹{u.financials?.totalDepositsRs?.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 800, color: '#f87171' }}>
+                      ₹{u.financials?.totalWithdrawalsRs?.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 700, color: '#ffffff' }}>
+                      {u.stats?.played}
+                    </td>
+                    <td style={{ padding: '1rem', fontSize: '0.75rem' }}>
+                      <span style={{ color: '#4ade80', fontWeight: 800 }}>{u.stats?.won}W</span> / <span style={{ color: '#f87171', fontWeight: 800 }}>{u.stats?.lost}L</span>
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        backgroundColor: u.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: u.status === 'ACTIVE' ? '#4ade80' : '#f87171'
+                      }}>
+                        {u.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        backgroundColor: u.riskScore === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                        color: u.riskScore === 'HIGH' ? '#f87171' : '#60a5fa'
+                      }}>
+                        {u.riskScore}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setSelectedUserId(u.id)}
+                        style={{
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: 'rgba(250, 204, 21, 0.2)',
+                          color: '#facc15',
+                          fontWeight: 800,
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Inspect 360°
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                    <button
-                      onClick={() => handleStatusToggle(user)}
-                      disabled={togglingUserId === user.id}
-                      style={{
-                        padding: '0.375rem 0.75rem',
-                        fontSize: '0.75rem',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: user.status === 'BANNED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        color: user.status === 'BANNED' ? '#4ade80' : '#f87171',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.375rem'
-                      }}
-                    >
-                      {togglingUserId === user.id ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          <span>Updating...</span>
-                        </>
-                      ) : (
-                        <span>{user.status === 'BANNED' ? 'Unban' : 'Ban'}</span>
-                      )}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {modalUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div className="animate-modal" style={{ width: '100%', maxWidth: '480px', backgroundColor: '#13192e', border: '1px solid rgba(250, 204, 21, 0.4)', borderRadius: '24px', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                Adjust Wallet — {modalUser.username}
-              </h3>
-              <button onClick={() => setModalUser(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleWalletAdjustSubmit}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Action Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setActionType('CREDIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'CREDIT' ? '#22c55e' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'CREDIT' ? 'rgba(34,197,94,0.2)' : 'transparent', color: actionType === 'CREDIT' ? '#4ade80' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>CREDIT (+)</button>
-                  <button type="button" onClick={() => setActionType('DEBIT')} style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid', borderColor: actionType === 'DEBIT' ? '#ef4444' : 'rgba(255,255,255,0.1)', backgroundColor: actionType === 'DEBIT' ? 'rgba(239,68,68,0.2)' : 'transparent', color: actionType === 'DEBIT' ? '#f87171' : '#94a3b8', fontWeight: 700, cursor: 'pointer' }}>DEBIT (-)</button>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Sub-Balance Bucket</label>
-                <select value={subBalanceType} onChange={(e) => setSubBalanceType(e.target.value)} className="custom-input" style={{ width: '100%' }}>
-                  <option value="deposit">Deposit Wallet (₹{modalUser.wallet.depositBalanceRs})</option>
-                  <option value="winning">Winning Wallet (₹{modalUser.wallet.winningBalanceRs})</option>
-                  <option value="bonus">Bonus Wallet (₹{modalUser.wallet.bonusBalanceRs})</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Amount in Rupees (₹)</label>
-                <input type="number" step="1" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} placeholder="e.g. 500" required className="custom-input" style={{ width: '100%' }} />
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.375rem' }}>Mandatory Audit Note Reason</label>
-                <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Promotional Bonus / Disputed Refund" required className="custom-input" style={{ width: '100%' }} />
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setModalUser(null)} className="btn-secondary">Cancel</button>
-                <button type="submit" disabled={actionLoading} className="btn-gold">
-                  {actionLoading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Processing Adjustment...</span>
-                    </>
-                  ) : (
-                    <span>Confirm Adjustment</span>
-                  )}
-                </button>
-              </div>
-            </form>
+        {/* Pagination Footer */}
+        <div style={{ padding: '1rem', backgroundColor: '#13192e', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
+          <div>
+            Showing Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong> ({pagination.total} Users Total)
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'transparent', color: '#ffffff', cursor: page > 1 ? 'pointer' : 'not-allowed', opacity: page > 1 ? 1 : 0.5 }}
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              disabled={page >= pagination.totalPages}
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'transparent', color: '#ffffff', cursor: page < pagination.totalPages ? 'pointer' : 'not-allowed', opacity: page < pagination.totalPages ? 1 : 0.5 }}
+            >
+              Next
+            </button>
           </div>
         </div>
+      </div>
+
+      {/* 360 Profile Slide-Over Drawer */}
+      {selectedUserId && (
+        <UserProfileDrawer
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          onRefreshUsers={fetchUsers}
+        />
       )}
     </div>
   );

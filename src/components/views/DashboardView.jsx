@@ -1,215 +1,243 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Users, DollarSign, AlertTriangle, PlayCircle, ShieldCheck, Activity, ArrowUpRight, Wallet, Sparkles, RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, Clock, Scale, XCircle, TrendingUp, TrendingDown, ShieldCheck } from 'lucide-react';
 import { apiFetch } from '@/services/api';
-import LudoLoader from '@/components/common/LudoLoader';
 
 export default function DashboardView() {
-  const [metrics, setMetrics] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMetrics();
+    fetchDashboardData();
   }, []);
 
-  const fetchMetrics = async () => {
-    setLoading(true);
+  const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const res = await apiFetch('/admin/dashboard');
-      if (res.status) {
-        setMetrics(res.data);
+      if (res.status && res.data) {
+        setData(res.data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error('Failed to fetch dashboard metrics:', e);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <LudoLoader text="Fetching Royal Telemetry & Platform Financials..." />;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '1rem' }}>
+        <RefreshCw size={28} color="#10b981" style={{ animation: 'spin 1s linear infinite' }} />
+        <div style={{ color: '#10b981', fontWeight: 600, fontSize: '0.9rem' }}>
+          Syncing Live MongoDB Platform Metrics...
+        </div>
+      </div>
+    );
   }
 
-  const { users, pending, live, financials } = metrics || {};
+  const fin = data?.financials || {};
+  const usr = data?.users || {};
+  const gms = data?.games || {};
+  const sec = data?.security || {};
+  const alerts = sec.recentAlerts || [];
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: '0 0 0.375rem 0' }}>
-            System Dashboard Overview
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>
-            Real-time platform telemetry, user totals, financial balances, and live dispute queues.
-          </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Title */}
+      <div>
+        <div style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          LIVE PLATFORM OVERVIEW
         </div>
-        <button
-          onClick={fetchMetrics}
-          className="btn-secondary"
-          style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-        >
-          <RefreshCw size={16} />
-          <span>Refresh Telemetry</span>
-        </button>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.02em' }}>
+          Platform health — last 24 hours
+        </h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-        <div className="glass-panel card-hover card-blue-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Total Registered Users
-              </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
-                {users?.total || 0}
-              </div>
-            </div>
-            <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 6px 16px rgba(59, 130, 246, 0.35)'
-            }}>
-              <Users size={24} color="#ffffff" />
-            </div>
+      {/* Row 1: 4 Financial KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+        {/* Total Wallet Balance */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Total Wallet Balance</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            ₹{(fin.totalWalletBalanceRs ?? 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#34d399', fontWeight: 700 }}>
-            <span className="badge-emerald">● {users?.active || 0} Active Accounts</span>
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>Live DB</span>
           </div>
         </div>
 
-        <div className="glass-panel card-hover card-green-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Platform Revenue (GGR)
-              </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#4ade80', marginTop: '0.375rem', lineHeight: 1.1 }}>
-                ₹{financials?.ggrRs || 0}
-              </div>
-            </div>
-            <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 6px 16px rgba(34, 197, 94, 0.35)'
-            }}>
-              <DollarSign size={24} color="#0a0c16" />
-            </div>
+        {/* Today's Deposits */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Today's Deposits</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            ₹{(fin.deposits?.todayRs ?? 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
-            Estimated 10% Match Commission Fee
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>Today</span>
           </div>
         </div>
 
-        <div className="glass-panel card-hover card-gold-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#facc15', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Pending Match Disputes
-              </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: pending?.disputes > 0 ? '#facc15' : '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
-                {pending?.disputes || 0}
-              </div>
-            </div>
-            <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #facc15 0%, #ca8a04 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 6px 16px rgba(250, 204, 21, 0.35)'
-            }}>
-              <AlertTriangle size={24} color="#0a0c16" />
-            </div>
+        {/* Today's Withdrawals */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Today's Withdrawals</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            ₹{(fin.withdrawals?.todayRs ?? 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ marginTop: '1rem' }}>
-            <span className={pending?.disputes > 0 ? "badge-gold" : "badge-emerald"}>
-              {pending?.disputes > 0 ? 'Action Required' : 'All Clear'}
-            </span>
+          <div style={{ fontSize: '0.8125rem', color: '#f87171', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingDown size={14} /> <span>Approved</span>
           </div>
         </div>
 
-        <div className="glass-panel card-hover card-red-border" style={{ borderRadius: '20px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Pending Cashout Queue
-              </span>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.375rem', lineHeight: 1.1 }}>
-                ₹{financials?.pendingWithdrawalsRs || 0}
-              </div>
-            </div>
-            <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #f87171 0%, #dc2626 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 6px 16px rgba(239, 68, 68, 0.35)'
-            }}>
-              <ArrowUpRight size={24} color="#ffffff" />
-            </div>
+        {/* Platform Revenue */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Platform Revenue (fees)</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            ₹{(fin.revenueRs ?? 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#f87171' }}>
-            <span className="badge-rose">{pending?.withdrawals || 0} Cashout Requests</span>
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>GGR</span>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel" style={{ borderRadius: '20px', padding: '1.75rem', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <Wallet size={22} color="#facc15" />
-          System Financial Ledger & User Sub-Balances
-        </h2>
+      {/* Row 2: 4 User & Game KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+        {/* Active Users */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Active Users</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            {(usr.active ?? 0).toLocaleString('en-IN')}
+          </div>
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>+{usr.newToday ?? 0} today</span>
+          </div>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(59, 130, 246, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Total User Deposits
-            </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#60a5fa', marginTop: '0.375rem' }}>
-              ₹{financials?.totalDepositsRs || 0}
+        {/* New Today */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>New Today</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            {(usr.newToday ?? 0).toLocaleString('en-IN')}
+          </div>
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>Registrations</span>
+          </div>
+        </div>
+
+        {/* Suspended */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Suspended</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            {usr.suspended ?? 0}
+          </div>
+          <div style={{ fontSize: '0.8125rem', color: '#f87171', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingDown size={14} /> <span>Accounts</span>
+          </div>
+        </div>
+
+        {/* Games Running Now */}
+        <div style={{ backgroundColor: '#121727', padding: '1.25rem', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500 }}>Games Running Now</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: '8px 0 6px 0', letterSpacing: '-0.02em' }}>
+            {(gms.running ?? 0).toLocaleString('en-IN')}
+          </div>
+          <div style={{ fontSize: '0.8125rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <TrendingUp size={14} /> <span>Live rooms</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Split View (SECURITY Active Alerts vs GAMES Game Status) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+        {/* SECURITY -> Active Alerts */}
+        <div style={{ backgroundColor: '#121727', padding: '1.35rem', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SECURITY</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: '4px 0 0 0' }}>Active alerts</h3>
             </div>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: sec.unresolvedAlertsCount > 0 ? '#f87171' : '#34d399', backgroundColor: 'rgba(255,255,255,0.04)', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>
+              {sec.unresolvedAlertsCount ?? 0} Unresolved
+            </span>
           </div>
 
-          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Processed Cashouts
-            </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f87171', marginTop: '0.375rem' }}>
-              ₹{financials?.totalWithdrawalsRs || 0}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {alerts.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#34d399', backgroundColor: '#171e32', borderRadius: '12px' }}>
+                <ShieldCheck size={32} style={{ margin: '0 auto 0.5rem auto', color: '#10b981' }} />
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ffffff' }}>No Active Security Alerts</div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>All security threat signals clear in MongoDB.</div>
+              </div>
+            ) : (
+              alerts.map((alert, idx) => (
+                <div key={idx} style={{ padding: '0.85rem 1rem', backgroundColor: '#171e32', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <AlertTriangle size={17} color={alert.riskLevel === 'HIGH' ? '#f87171' : '#fbbf24'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.3 }}>
+                      {alert.title || alert.description}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
+                      {alert.createdAt ? new Date(alert.createdAt).toLocaleTimeString() : 'Recently'}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* GAMES -> Game Status 4-Grid */}
+        <div style={{ backgroundColor: '#121727', padding: '1.35rem', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>GAMES</div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: '4px 0 0 0' }}>Game status</h3>
           </div>
 
-          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(34, 197, 94, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              User Winning Balances
-            </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#4ade80', marginTop: '0.375rem' }}>
-              ₹{financials?.walletBalancesRs?.winning || 0}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.875rem' }}>
+            {/* Completed */}
+            <div style={{ backgroundColor: '#171e32', padding: '1.15rem', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399' }}>
+                <CheckCircle2 size={16} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Completed</span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '8px' }}>
+                {(gms.completed ?? 0).toLocaleString('en-IN')}
+              </div>
             </div>
-          </div>
 
-          <div style={{ backgroundColor: '#0a0c16', border: '1px solid rgba(250, 204, 21, 0.25)', padding: '1.25rem', borderRadius: '14px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              User Bonus Balances
-            </span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#facc15', marginTop: '0.375rem' }}>
-              ₹{financials?.walletBalancesRs?.bonus || 0}
+            {/* Result Pending */}
+            <div style={{ backgroundColor: '#171e32', padding: '1.15rem', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fbbf24' }}>
+                <Clock size={16} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Result Pending</span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '8px' }}>
+                {(data?.pending?.disputes ?? 0).toLocaleString('en-IN')}
+              </div>
+            </div>
+
+            {/* Disputed */}
+            <div style={{ backgroundColor: '#171e32', padding: '1.15rem', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f472b6' }}>
+                <Scale size={16} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Disputed</span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '8px' }}>
+                {(gms.disputed ?? 0).toLocaleString('en-IN')}
+              </div>
+            </div>
+
+            {/* Cancelled */}
+            <div style={{ backgroundColor: '#171e32', padding: '1.15rem', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f87171' }}>
+                <XCircle size={16} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Cancelled</span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '8px' }}>
+                {(gms.cancelled ?? 0).toLocaleString('en-IN')}
+              </div>
             </div>
           </div>
         </div>

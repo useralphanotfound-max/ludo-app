@@ -12,42 +12,39 @@ export default function LudoLoader({ text = 'Loading Royal Ludo Data...' }) {
       padding: '3rem 1.5rem',
       textAlign: 'center'
     }}>
-      {/* 3D Animated Ludo Coin Token */}
-      <div className="ludo-coin-loader" style={{
-        width: '64px',
-        height: '64px',
+      <div className="ludo-dice-loader" aria-label="Loading" role="status" style={{
         position: 'relative',
-        marginBottom: '1.25rem'
+        width: '72px',
+        height: '72px',
+        marginBottom: '1.25rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
-        <div style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at 30% 30%, #ffe066 0%, #f59e0b 50%, #b45309 100%)',
-          boxShadow: '0 0 25px rgba(245, 158, 11, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -4px 6px rgba(0, 0, 0, 0.4)',
-          border: '3px solid #fef08a',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'coin3DSpin 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite'
+        <div className="dice-face" style={{
+          width: '72px',
+          height: '72px',
+          borderRadius: '18px',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #d9e7ff 100%)',
+          border: '2px solid rgba(255,255,255,0.8)',
+          boxShadow: '0 16px 30px rgba(15, 23, 42, 0.35)',
+          position: 'relative',
+          animation: 'diceFloat 1.8s ease-in-out infinite'
         }}>
-          <span style={{
-            fontSize: '1.75rem',
-            fontWeight: 900,
-            color: '#78350f',
-            textShadow: '0 1px 0 rgba(255, 255, 255, 0.6)',
-            fontFamily: 'Outfit, sans-serif'
-          }}>
-            ₹
-          </span>
+          <span style={{ position: 'absolute', top: '16px', left: '16px', width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 0 2px rgba(255,255,255,0.8)' }} />
+          <span style={{ position: 'absolute', top: '16px', right: '16px', width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 2px rgba(255,255,255,0.8)' }} />
+          <span style={{ position: 'absolute', bottom: '16px', left: '16px', width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 0 2px rgba(255,255,255,0.8)' }} />
+          <span style={{ position: 'absolute', bottom: '16px', right: '16px', width: '10px', height: '10px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 0 2px rgba(255,255,255,0.8)' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '8px', height: '8px', borderRadius: '50%', background: '#0f172a', boxShadow: '0 0 0 2px rgba(255,255,255,0.8)' }} />
         </div>
       </div>
 
       <div style={{
-        fontSize: '0.95rem',
+        fontSize: '0.9rem',
         fontWeight: 700,
-        color: '#fbbf24',
-        letterSpacing: '0.02em',
+        color: '#f8fafc',
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
         animation: 'pulseText 1.5s ease-in-out infinite'
       }}>
         {text}

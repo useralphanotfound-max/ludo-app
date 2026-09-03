@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema({
     lost: { type: Number, default: 0 },
     totalWinningsPaise: { type: Number, default: 0 }
   },
+  kycStatus: { type: String, enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'], default: 'VERIFIED', index: true },
+  riskScore: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW', index: true },
+  isWalletFrozen: { type: Boolean, default: false, index: true },
+  failedLoginAttempts: { type: Number, default: 0 },
+  lockoutUntil: { type: Date, default: null },
+  otpSecret: { type: String, default: null },
+  is2FAEnabled: { type: Boolean, default: false },
   lastLoginAt: { type: Date, default: Date.now },
   lastLoginIp: { type: String, default: '127.0.0.1' }
 }, { timestamps: true });

@@ -25,7 +25,7 @@ async function resolveMongodbSrv(uri) {
     const [_, user, pass, host, db, query] = urlMatch;
     const resolver = new dns.promises.Resolver();
     resolver.setServers(['8.8.8.8', '1.1.1.1']);
-    
+
     const addresses = await resolver.resolveSrv(`_mongodb._tcp.${host}`);
     if (!addresses || addresses.length === 0) return uri;
 
@@ -34,7 +34,7 @@ async function resolveMongodbSrv(uri) {
     const sslOpt = cleanQuery.includes('ssl=') ? '' : '&ssl=true';
     const authSrc = cleanQuery.includes('authSource=') ? '' : '&authSource=admin';
     const retryW = cleanQuery.includes('retryWrites=') ? '' : '&retryWrites=true';
-    
+
     return `mongodb://${user}:${pass}@${nodeAddresses}/${db || ''}${cleanQuery}${sslOpt}${authSrc}${retryW}`;
   } catch (e) {
     return uri;

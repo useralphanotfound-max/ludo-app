@@ -1,109 +1,557 @@
 {
   "info": {
-    "title": "Royal Ludo Mobile App & Superadmin Complete REST API Collection",
-    "version": "1.0.0",
-    "description": "Exhaustive Production Specification of all Mobile App Endpoints and Superadmin APIs for Royal Ludo.",
-    "baseUrl": "http://localhost:3000/api",
-    "superadminLoginUrl": "http://localhost:3000/superadmin/login",
-    "headers": {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer <JWT_ACCESS_TOKEN>"
-    }
+    "name": "Royal Ludo Mobile App & Superadmin API Collection",
+    "description": "Complete Postman-ready contract for the Royal Ludo mobile app and admin backend. All responses use a standard envelope: { status, message, data }.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
   },
-  "modules": [
+  "variable": [
     {
-      "name": "1. Authentication Module",
-      "endpoints": [
-        { "name": "Register User", "method": "POST", "path": "/auth/register", "body": { "username": "kingplayer", "mobile": "9876543210", "password": "Royal@123", "referralCode": "ROYAL50" } },
-        { "name": "Verify OTP", "method": "POST", "path": "/auth/verify-otp", "body": { "otpSessionId": "session_123", "otp": "1234" } },
-        { "name": "User Login", "method": "POST", "path": "/auth/login", "body": { "mobile": "9876543210", "password": "Royal@123" } },
-        { "name": "Forgot Password", "method": "POST", "path": "/auth/forgot-password", "body": { "mobile": "9876543210" } },
-        { "name": "Reset Password", "method": "POST", "path": "/auth/reset-password", "body": { "otpSessionId": "session_123", "otp": "1234", "newPassword": "Royal@1234", "confirmPassword": "Royal@1234" } },
-        { "name": "Logout", "method": "POST", "path": "/auth/logout", "body": {} }
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"kingplayer\",\n  \"mobile\": \"9876543210\",\n  \"password\": \"Royal@123\",\n  \"referralCode\": \"ROYAL50\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Request params: username, mobile, password, referralCode. Response: status, message, data { otpSessionId, otpExpiresInSec }."
+          },
+          "response": [
+            {
+              "name": "201 Success",
+              "originalRequest": { "method": "POST", "url": "{{baseUrl}}/auth/register" },
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"status\": true,\n  \"message\": \"Registration initiated. OTP sent successfully.\",\n  \"data\": {\n    \"otpSessionId\": \"session_64f...\",\n    \"otpExpiresInSec\": 120\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\",\n  \"password\": \"Royal@123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Request params: mobile, password. Response: status, message, data { accessToken, refreshToken, expiresIn, user { id, username, mobile, role, avatarUrl } }."
+          },
+          "response": [
+            {
+              "name": "200 Success",
+              "originalRequest": { "method": "POST", "url": "{{baseUrl}}/auth/login" },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"status\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"accessToken\": \"jwt-token\",\n    \"refreshToken\": \"jwt-token\",\n    \"expiresIn\": 2592000,\n    \"user\": {\n      \"id\": \"64f...\",\n      \"username\": \"kingplayer\",\n      \"mobile\": \"9876543210\",\n      \"role\": \"USER\",\n      \"avatarUrl\": null\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Request params: mobile. Response: status, message, data { otpSessionId, otpExpiresInSec }."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpSessionId\": \"session_64f...\",\n  \"otp\": \"1234\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "description": "Request params: otpSessionId, otp. Response: status, message, data { verified: true }."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpSessionId\": \"session_64f...\",\n  \"otp\": \"1234\",\n  \"newPassword\": \"Royal@1234\",\n  \"confirmPassword\": \"Royal@1234\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "Request params: otpSessionId, otp, newPassword, confirmPassword. Response: status, message."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Request: bearer token. Response: status, message."
+          },
+          "response": []
+        }
       ]
     },
     {
-      "name": "2. User Profile Module",
-      "endpoints": [
-        { "name": "Get Profile & Sub-Balances", "method": "GET", "path": "/user/profile" },
-        { "name": "Get User Gameplay Statistics", "method": "GET", "path": "/user/stats" }
+      "name": "User Profile & Stats",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/user/profile",
+            "description": "Response: status, message, data { id, username, mobile, avatarUrl, referralCode, stats, wallet { depositBalanceRs, winningBalanceRs, bonusBalanceRs, totalBalanceRs } }."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/user/stats",
+            "description": "Response: status, message, data { totalMatches, wins, losses, winRatePct, totalWinningsRs, avgMatchFeeRs }."
+          },
+          "response": []
+        }
       ]
     },
     {
-      "name": "3. Mobile Dashboard Aggregation",
-      "endpoints": [
-        { "name": "Get Home Dashboard Payload", "method": "GET", "path": "/dashboard" }
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/wallet",
+            "description": "Response: status, message, data { depositBalanceRs, winningBalanceRs, bonusBalanceRs, lockedBalanceRs, totalBalanceRs }."
+          },
+          "response": []
+        },
+        {
+          "name": "Deposit Initiate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountRs\": 500,\n  \"paymentMethod\": \"UPI\"\n}"
+            },
+            "url": "{{baseUrl}}/wallet/deposit/initiate",
+            "description": "Request params: amountRs, paymentMethod. Response: status, message, data { transactionId, amountRs, updatedDepositBalanceRs }."
+          },
+          "response": []
+        },
+        {
+          "name": "Withdraw Initiate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountRs\": 500,\n  \"payoutMethod\": \"UPI\",\n  \"upiId\": \"kingplayer@upi\",\n  \"accountHolderName\": \"King Player\"\n}"
+            },
+            "url": "{{baseUrl}}/wallet/withdraw/initiate",
+            "description": "Request params: amountRs, payoutMethod, upiId or accountNumber/ifscCode, accountHolderName. Response: status, message, data { withdrawalId, amountRs, status }."
+          },
+          "response": []
+        },
+        {
+          "name": "Wallet Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/wallet/transactions",
+            "description": "Response: status, message, data [{ transactionId, type, amountRs, status, description, createdAt }]."
+          },
+          "response": []
+        }
       ]
     },
     {
-      "name": "4. Wallet & Cashout Module",
-      "endpoints": [
-        { "name": "Get Sub-Balances", "method": "GET", "path": "/wallet" },
-        { "name": "Initiate Deposit", "method": "POST", "path": "/wallet/deposit/initiate", "body": { "amountRs": 500, "paymentMethod": "UPI" } },
-        { "name": "Initiate Cashout (100% Net, No TDS, No KYC)", "method": "POST", "path": "/wallet/withdraw/initiate", "body": { "amountRs": 500, "payoutMethod": "UPI", "upiId": "kingplayer@upi", "accountHolderName": "King Player" } },
-        { "name": "Transaction History Ledger", "method": "GET", "path": "/wallet/transactions" }
+      "name": "Rooms & Match Flow",
+      "item": [
+        {
+          "name": "Browse Rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/rooms",
+            "description": "Response: status, message, data [room objects] with fields such as roomCode, gameMode, playerCount, entryFee, joinedPlayers, status."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gameMode\": \"CLASSIC\",\n  \"playerCount\": 2,\n  \"entryFeeRs\": 500,\n  \"isPrivate\": false\n}"
+            },
+            "url": "{{baseUrl}}/rooms",
+            "description": "Request params: gameMode, playerCount, entryFeeRs, isPrivate. Response: status, message, data { room object } with roomCode and entry fee deducted from wallet."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Match Result",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matchId\": \"66a01234567890abcdef1111\",\n  \"claimedResult\": \"WON\",\n  \"screenshotUrl\": \"https://images.unsplash.com/...\"\n}"
+            },
+            "url": "{{baseUrl}}/matches/submit-result",
+            "description": "Request params: matchId, claimedResult, screenshotUrl. Response: status, message, data { disputeCreated: true }."
+          },
+          "response": []
+        },
+        {
+          "name": "Match History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/matches/history",
+            "description": "Response: status, message, data [{ id, gameMode, entryFeeRs, prizePoolRs, status, winnerId, players, startedAt }]."
+          },
+          "response": []
+        }
       ]
     },
     {
-      "name": "5. Game Rooms Module",
-      "endpoints": [
-        { "name": "Browse Public Rooms", "method": "GET", "path": "/rooms" },
-        { "name": "Create Classic/Turbo Room", "method": "POST", "path": "/rooms", "body": { "gameMode": "CLASSIC", "playerCount": 2, "entryFeeRs": 500, "isPrivate": false } }
+      "name": "Leaderboard, Referral, Notifications",
+      "item": [
+        {
+          "name": "Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/leaderboard?period=daily",
+            "description": "Query param: period. Response: status, message, data { period, myRank, rankings [{ rank, userId, username, avatarUrl, winningsRs }] }."
+          },
+          "response": []
+        },
+        {
+          "name": "My Referral Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/referral/my-code",
+            "description": "Response: status, message, data { referralCode, shareUrl, bonusPerReferralRs, totalReferred, totalBonusEarnedRs }."
+          },
+          "response": []
+        },
+        {
+          "name": "User Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/notifications",
+            "description": "Response: status, message, data [notification items]."
+          },
+          "response": []
+        },
+        {
+          "name": "FAQ",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/support/faq",
+            "description": "Response: status, message, data [faq objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Terms",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cms/terms",
+            "description": "Response: status, message, data { content: string } or CMS terms payload."
+          },
+          "response": []
+        }
       ]
     },
     {
-      "name": "6. Matches & Screenshot Disputes",
-      "endpoints": [
-        { "name": "Submit Match Result & Screenshot", "method": "POST", "path": "/matches/submit-result", "body": { "matchId": "66a01234567890abcdef1111", "claimedResult": "WON", "screenshotUrl": "https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=800&q=80" } },
-        { "name": "User Match History", "method": "GET", "path": "/matches/history" }
-      ]
-    },
-    {
-      "name": "7. Leaderboards & Rankings",
-      "endpoints": [
-        { "name": "Get Leaderboard Rankings", "method": "GET", "path": "/leaderboard?period=daily" }
-      ]
-    },
-    {
-      "name": "8. Referral System",
-      "endpoints": [
-        { "name": "My Referral Code & Stats", "method": "GET", "path": "/referral/my-code" }
-      ]
-    },
-    {
-      "name": "9. Push Notifications",
-      "endpoints": [
-        { "name": "Get User Notifications", "method": "GET", "path": "/notifications" }
-      ]
-    },
-    {
-      "name": "10. Support & FAQ",
-      "endpoints": [
-        { "name": "Get Frequently Asked Questions", "method": "GET", "path": "/support/faq" }
-      ]
-    },
-    {
-      "name": "11. CMS & App Control",
-      "endpoints": [
-        { "name": "Force Update Version Check", "method": "GET", "path": "/cms/version-check" },
-        { "name": "Terms of Service", "method": "GET", "path": "/cms/terms" }
-      ]
-    },
-    {
-      "name": "12. Superadmin Management APIs",
-      "endpoints": [
-        { "name": "Superadmin Login (IP Logged)", "method": "POST", "path": "/admin/login", "body": { "username": "admin@royalludo.com", "password": "RoyalAdmin@123" } },
-        { "name": "Telemetry Dashboard", "method": "GET", "path": "/admin/dashboard" },
-        { "name": "Users List", "method": "GET", "path": "/admin/users?search=" },
-        { "name": "Manual Wallet Adjust", "method": "POST", "path": "/admin/users/:id/wallet-adjust", "body": { "amountRs": 500, "subBalanceType": "deposit", "actionType": "CREDIT", "reason": "Promotional bonus" } },
-        { "name": "User Ban Status Toggle", "method": "PATCH", "path": "/admin/users/:id/status", "body": { "status": "BANNED", "reason": "Terms violation" } },
-        { "name": "Pending Withdrawals Queue", "method": "GET", "path": "/admin/withdrawals" },
-        { "name": "Approve / Reject Cashout", "method": "POST", "path": "/admin/withdrawals/:id/process", "body": { "action": "APPROVE" } },
-        { "name": "Pending Disputes Queue", "method": "GET", "path": "/admin/disputes" },
-        { "name": "Resolve Dispute & Award Winner", "method": "POST", "path": "/admin/disputes/:id/resolve", "body": { "decision": "P1_WIN", "adminNotes": "Screenshot evidence verified." } },
-        { "name": "System Game Settings", "method": "GET & PUT", "path": "/admin/settings", "body": { "platformCommissionPct": 10, "maintenanceMode": false } },
-        { "name": "Exact IP Audit Trail Logs", "method": "GET", "path": "/admin/audit-logs" }
+      "name": "Superadmin",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin@royalludo.com\",\n  \"password\": \"RoyalAdmin@123\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/login",
+            "description": "Request params: username, password. Response: status, message, data { accessToken, admin { role, username } }."
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/dashboard",
+            "description": "Response: status, message, data { users, financials, games, security, pending }."
+          },
+          "response": []
+        },
+        {
+          "name": "Users List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/users?search=",
+            "description": "Query: search. Response: status, message, data [user objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BANNED\",\n  \"reason\": \"Terms violation\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/users/:id/status",
+            "description": "Request params: status, reason. Response: status, message."
+          },
+          "response": []
+        },
+        {
+          "name": "Wallet Adjust",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountRs\": 500,\n  \"subBalanceType\": \"deposit\",\n  \"actionType\": \"CREDIT\",\n  \"reason\": \"Promotional bonus\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/users/:id/wallet-adjust",
+            "description": "Request params: amountRs, subBalanceType, actionType, reason. Response: status, message, data { transactionId }."
+          },
+          "response": []
+        },
+        {
+          "name": "Deposits List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/deposits",
+            "description": "Response: status, message, data [deposit objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Withdrawals List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/withdrawals",
+            "description": "Response: status, message, data [withdrawal requests]."
+          },
+          "response": []
+        },
+        {
+          "name": "Process Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"APPROVE\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/withdrawals/:id/process",
+            "description": "Request params: action. Response: status, message, data { processed: true }."
+          },
+          "response": []
+        },
+        {
+          "name": "Disputes List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/disputes",
+            "description": "Response: status, message, data [dispute objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"P1_WIN\",\n  \"adminNotes\": \"Screenshot evidence verified.\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/disputes/:id/resolve",
+            "description": "Request params: decision, adminNotes. Response: status, message."
+          },
+          "response": []
+        },
+        {
+          "name": "Game Catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/games?status=ALL&search=",
+            "description": "Query: status, search. Response: status, message, data [match objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/roles",
+            "description": "Response: status, message, data { roles, permissions }."
+          },
+          "response": []
+        },
+        {
+          "name": "Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/settings",
+            "description": "Response: status, message, data { platformSettings }."
+          },
+          "response": []
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/audit-logs",
+            "description": "Response: status, message, data [audit log objects]."
+          },
+          "response": []
+        },
+        {
+          "name": "Monitoring",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/monitoring",
+            "description": "Response: status, message, data { apiLatencyMs, dbStatus, cpuUsagePct, memoryUsagePct, paymentGatewayStatus }."
+          },
+          "response": []
+        }
       ]
     }
   ]

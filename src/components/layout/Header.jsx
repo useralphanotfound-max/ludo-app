@@ -1,143 +1,87 @@
 'use client';
 
 import React from 'react';
-import { Menu, PanelLeftClose, PanelLeft, Globe, LogOut, ShieldCheck } from 'lucide-react';
+import { Menu, PanelLeftClose, PanelLeft, Search, LogOut, ShieldCheck } from 'lucide-react';
 
 export default function Header({ admin, mobileOpen, setMobileOpen, collapsed, setCollapsed, onLogout }) {
   return (
     <header style={{
-      height: '70px',
-      backgroundColor: '#0f1322',
-      borderBottom: '1px solid rgba(250, 204, 21, 0.2)',
+      height: '65px',
+      backgroundColor: '#0c0f1d',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0 1.5rem',
       position: 'sticky',
       top: 0,
-      zIndex: 30,
-      backdropFilter: 'blur(16px)'
+      zIndex: 30
     }}>
-      {/* Menu Toggle Buttons & Brand Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {/* Mobile Toggle Button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="mobile-menu-btn"
-          style={{
-            display: 'none',
-            background: 'none',
-            border: '1px solid rgba(250, 204, 21, 0.3)',
-            borderRadius: '10px',
-            padding: '0.5rem',
-            color: '#facc15',
-            cursor: 'pointer'
-          }}
-          aria-label="Toggle Mobile Menu"
-        >
-          <Menu size={22} />
-        </button>
-
-        {/* Desktop Sidebar Collapse Toggle */}
+      {/* Search Input Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '480px' }}>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="desktop-toggle-btn"
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '10px',
-            padding: '0.5rem',
-            color: '#facc15',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s ease'
-          }}
-          title={collapsed ? "Expand Sidebar Navigation" : "Collapse Sidebar Navigation"}
+          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
-          {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+          {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-          <img
-            src="/logo.png"
-            alt="Royal Ludo Logo"
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Search size={16} color="#64748b" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            type="text"
+            placeholder="Search user, transaction ID, game ID..."
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              objectFit: 'cover',
-              boxShadow: '0 4px 16px rgba(250, 204, 21, 0.35)',
-              border: '1.5px solid rgba(250, 204, 21, 0.6)'
+              width: '100%',
+              backgroundColor: '#141829',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+              padding: '0.5rem 1rem 0.5rem 2.5rem',
+              color: '#ffffff',
+              fontSize: '0.825rem',
+              outline: 'none'
             }}
           />
-          <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              Royal Ludo
-            </div>
-            <div style={{ fontSize: '0.7rem', color: '#facc15', fontWeight: 800, letterSpacing: '0.05em' }}>
-              SUPERADMIN CONSOLE
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Admin Profile Details */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div className="desktop-only-ip" style={{
-          backgroundColor: 'rgba(59, 130, 246, 0.12)',
-          border: '1px solid rgba(59, 130, 246, 0.3)',
-          padding: '0.375rem 0.75rem',
-          borderRadius: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: '0.75rem',
-          color: '#60a5fa'
-        }}>
-          <Globe size={14} />
-          <span>IP: <strong>{admin?.lastLoginIp || '127.0.0.1 (Localhost)'}</strong></span>
+      {/* Right Controls: All Systems Normal & Admin Initials Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        {/* Systems Pulse */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: '#34d399', fontWeight: 700 }}>
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+          <span>All systems normal</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '0.75rem', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-          <img
-            src={admin?.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=superadmin'}
-            alt="Superadmin Avatar"
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              border: '2px solid #facc15',
-              backgroundColor: '#0f172a',
-              boxShadow: '0 0 12px rgba(250, 204, 21, 0.35)'
-            }}
-          />
-          <div className="desktop-only-user">
-            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
-              {admin?.username || 'admin@royalludo.com'}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: 800, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <ShieldCheck size={12} />
-              <span>SUPERADMIN</span>
-            </div>
+        {/* Admin Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: '#1d243a',
+            border: '1px solid rgba(255,255,255,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            color: '#60a5fa'
+          }}>
+            RR
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff' }}>
+              {admin?.username || 'Ritu Rao'}
+            </span>
+            <span style={{ fontSize: '0.68rem', color: '#64748b' }}>SUPERADMIN</span>
           </div>
 
           {onLogout && (
             <button
               onClick={onLogout}
               title="Sign Out"
-              style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
-                padding: '0.45rem 0.65rem',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                marginLeft: '0.5rem',
-                display: 'flex',
-                alignItems: 'center'
-              }}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', marginLeft: '0.5rem' }}
             >
               <LogOut size={16} />
             </button>

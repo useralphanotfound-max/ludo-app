@@ -13,6 +13,11 @@ const transactionSchema = new mongoose.Schema({
   referenceId: { type: String, default: '' },
   gatewayReferenceId: { type: String, default: '' },
   description: { type: String, default: '' },
+  reason: { type: String, default: '' },
+  previousBalance: { type: Number, default: 0 },
+  newBalance: { type: Number, default: 0 },
+  ipAddress: { type: String, default: '127.0.0.1' },
+  adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   performedBy: { type: String, default: 'system' }
 }, { timestamps: true });
 
