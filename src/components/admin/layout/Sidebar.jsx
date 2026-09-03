@@ -52,51 +52,51 @@ const iconMap = {
 
 const NAVIGATION_GROUPS = [
   {
-    title: 'OVERVIEW',
+    title: 'MAIN OVERVIEW',
     items: [
       { id: 'dashboard', label: 'Dashboard', path: '/admin', permission: 'dashboard' }
     ]
   },
   {
-    title: 'FINANCIAL',
+    title: 'PAYMENTS & MONEY',
     items: [
-      { id: 'wallets', label: 'Wallets', path: '/admin/wallets', permission: 'wallets' },
+      { id: 'wallets', label: 'User Balances', path: '/admin/wallets', permission: 'wallets' },
       { id: 'deposits', label: 'Deposits', path: '/admin/deposits', permission: 'deposits', badgeKey: 'deposits', badgeColor: 'emerald' },
       { id: 'withdrawals', label: 'Withdrawals', path: '/admin/withdrawals', permission: 'withdrawals', badgeKey: 'withdrawals', badgeColor: 'rose' },
       { id: 'transactions', label: 'Transactions', path: '/admin/transactions', permission: 'transactions' }
     ]
   },
   {
-    title: 'GAMING',
+    title: 'GAMES & MATCHES',
     items: [
-      { id: 'games', label: 'Games', path: '/admin/games', permission: 'games' },
-      { id: 'live-games', label: 'Live Games', path: '/admin/live-games', permission: 'live-games', badgeKey: 'liveGames', badgeColor: 'emerald' },
-      { id: 'disputes', label: 'Disputes', path: '/admin/disputes', permission: 'disputes', badgeKey: 'disputes', badgeColor: 'gold' }
+      { id: 'games', label: 'Game List', path: '/admin/games', permission: 'games' },
+      { id: 'live-games', label: 'Live Matches', path: '/admin/live-games', permission: 'live-games', badgeKey: 'liveGames', badgeColor: 'emerald' },
+      { id: 'disputes', label: 'Match Conflicts', path: '/admin/disputes', permission: 'disputes', badgeKey: 'disputes', badgeColor: 'gold' }
     ]
   },
   {
-    title: 'OPERATIONS',
+    title: 'USERS & SUPPORT',
     items: [
-      { id: 'users', label: 'Users', path: '/admin/users', permission: 'users' },
-      { id: 'risk', label: 'Risk / Anti-Cheat', path: '/admin/risk', permission: 'risk' },
+      { id: 'users', label: 'User Accounts', path: '/admin/users', permission: 'users' },
+      { id: 'risk', label: 'Security & Fraud', path: '/admin/risk', permission: 'risk' },
       { id: 'referrals', label: 'Referrals', path: '/admin/referrals', permission: 'referrals' },
       { id: 'support', label: 'Support Tickets', path: '/admin/support', permission: 'support' }
     ]
   },
   {
-    title: 'ADMINISTRATION',
+    title: 'ADMIN STAFF',
     items: [
-      { id: 'sub-admins', label: 'Sub-Admins', path: '/admin/sub-admins', permission: 'admins' },
+      { id: 'sub-admins', label: 'Admin Staff', path: '/admin/sub-admins', permission: 'admins' },
       { id: 'roles', label: 'Roles & Privileges', path: '/admin/roles', permission: 'roles' },
-      { id: 'logs', label: 'Audit Logs', path: '/admin/audit-logs', permission: 'audit' }
+      { id: 'logs', label: 'Activity Logs', path: '/admin/audit-logs', permission: 'audit' }
     ]
   },
   {
-    title: 'SYSTEM',
+    title: 'SYSTEM SETTINGS',
     items: [
       { id: 'notifications', label: 'Notifications', path: '/admin/notifications', permission: 'notifications' },
       { id: 'settings', label: 'Settings', path: '/admin/settings', permission: 'settings' },
-      { id: 'monitoring', label: 'System Monitoring', path: '/admin/monitoring', permission: 'monitoring' }
+      { id: 'monitoring', label: 'Server Status', path: '/admin/monitoring', permission: 'monitoring' }
     ]
   }
 ];

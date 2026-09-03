@@ -10,6 +10,8 @@ import LiveTicker from '@/components/common/LiveTicker';
 import { getRolePermissions } from '@/lib/rbac';
 import { apiFetch } from '@/services/api';
 
+import LudoDiceLoader from '@/components/common/LudoDiceLoader';
+
 export default function AppShell({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,25 +92,7 @@ export default function AppShell({ children }) {
   };
 
   if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          backgroundColor: 'var(--bg-void)',
-          color: 'var(--emerald-light)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 800,
-          fontSize: '0.9rem',
-          gap: '1rem'
-        }}
-      >
-        <div className="pulse-indicator" style={{ width: '16px', height: '16px' }} />
-        <span>Authenticating Royal Ludo Admin OS Session...</span>
-      </div>
-    );
+    return <LudoDiceLoader fullScreen text="Authenticating Royal Ludo Admin..." size="large" />;
   }
 
   return (

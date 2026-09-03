@@ -66,16 +66,16 @@ export default function OverviewDashboardPage() {
   return (
     <AppShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Title Header with Range Selector */}
+        {/* Header & Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">PLATFORM OPERATIONAL COMMAND CENTER</div>
+            <div className="micro-label">ADMIN OVERVIEW DASHBOARD</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Platform Operations & Financial Telemetry
+              Royal Ludo Overview & System Summary
             </h1>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
             <SelectFilter
               value={timeRange}
               onChange={setTimeRange}
@@ -102,7 +102,7 @@ export default function OverviewDashboardPage() {
                 gap: '0.5rem'
               }}
             >
-              <RefreshCw size={15} /> Sync Metrics
+              <RefreshCw size={15} /> Refresh Dashboard
             </button>
           </div>
         </div>

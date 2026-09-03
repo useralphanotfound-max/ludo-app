@@ -177,15 +177,15 @@ export default function WithdrawalManagementPage() {
         {/* Header & Export */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">FINANCIAL PAYOUT OPERATIONS</div>
+            <div className="micro-label">WITHDRAWAL REQUESTS</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Withdrawal Management & Dual-Approval Engine
+              Withdrawals & Approvals
             </h1>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button
-              onClick={() => Swal.fire({ title: 'Exporting CSV', text: 'Cashout payout report download started', icon: 'info', background: '#111624', color: '#ffffff' })}
+              onClick={() => Swal.fire({ title: 'Exporting CSV', text: 'Withdrawal report download started', icon: 'info', background: '#111624', color: '#ffffff' })}
               style={{
                 padding: '0.6rem 1rem',
                 borderRadius: 'var(--radius-md)',
@@ -219,22 +219,22 @@ export default function WithdrawalManagementPage() {
                 gap: '0.5rem'
               }}
             >
-              <RefreshCw size={15} /> Sync Payouts
+              <RefreshCw size={15} /> Refresh List
             </button>
           </div>
         </div>
 
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Pending Cashouts Queue" value={summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : withdrawals.filter(w => w.status === 'PENDING').length} trend="Awaiting signoff" trendType="neutral" icon={Clock} badgeColor="gold" />
-          <StatCard title="Today's Approved Payouts" value={`₹${(summaryStats?.approvedTodayRs !== undefined ? summaryStats.approvedTodayRs : withdrawals.filter(w => w.status === 'APPROVED').reduce((sum, w) => sum + (w.amountRs || 0), 0)).toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || 'Bank transfer queued'} trendType="up" icon={CheckCircle} badgeColor="emerald" />
-          <StatCard title="Rejected / Refunded" value={summaryStats?.rejectedCount !== undefined ? summaryStats.rejectedCount : withdrawals.filter(w => w.status === 'REJECTED').length} trend="Refunded to winning" trendType="down" icon={ShieldAlert} badgeColor="rose" />
-          <StatCard title="Avg Processing Time" value={summaryStats?.avgProcessingTime || '3.5 mins'} trend="Instant UPI Active" trendType="up" icon={ArrowUpRight} badgeColor="emerald" />
+          <StatCard title="Pending Withdrawals" value={summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : withdrawals.filter(w => w.status === 'PENDING').length} trend="Waiting approval" trendType="neutral" icon={Clock} badgeColor="gold" />
+          <StatCard title="Approved Today" value={`₹${(summaryStats?.approvedTodayRs !== undefined ? summaryStats.approvedTodayRs : withdrawals.filter(w => w.status === 'APPROVED').reduce((sum, w) => sum + (w.amountRs || 0), 0)).toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || 'Bank transfer queued'} trendType="up" icon={CheckCircle} badgeColor="emerald" />
+          <StatCard title="Rejected / Refunded" value={summaryStats?.rejectedCount !== undefined ? summaryStats.rejectedCount : withdrawals.filter(w => w.status === 'REJECTED').length} trend="Returned to balance" trendType="down" icon={ShieldAlert} badgeColor="rose" />
+          <StatCard title="Average Cashout Speed" value={summaryStats?.avgProcessingTime || '3.5 mins'} trend="Instant UPI Active" trendType="up" icon={ArrowUpRight} badgeColor="emerald" />
         </div>
 
         {/* Multi-Admin Threshold Notice Banner & Chart */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
-          <ChartCard title="Daily Payout Approval vs Rejection Velocity" subtitle="7-day approved vs rejected cashouts comparison" loading={loading}>
+          <ChartCard title="Daily Approved vs Rejected Withdrawals" subtitle="7-day cashout status comparison" loading={loading}>
             <BarChartWidget
               data={velocityTrend.length > 0 ? velocityTrend : trendData}
               xKey="name"
@@ -248,10 +248,10 @@ export default function WithdrawalManagementPage() {
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--gold)' }}>
               <AlertTriangle size={20} />
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>Dual Approval Protocol</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>High Amount Approval Rule</h3>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-              Cashout requests exceeding <strong style={{ color: 'var(--gold)' }}>₹10,000</strong> require multi-admin signoff. Single administrators cannot approve self-withdrawals.
+              Withdrawal requests above <strong style={{ color: 'var(--gold)' }}>₹10,000</strong> require approval from 2 admins. Admins cannot approve their own withdrawals.
             </p>
             <div style={{ padding: '0.75rem', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-md)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Configured Threshold: <strong>₹25,000 max limit</strong>

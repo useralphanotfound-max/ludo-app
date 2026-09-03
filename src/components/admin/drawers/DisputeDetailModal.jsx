@@ -14,12 +14,13 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
 
   const handleAward = async (action, winnerUsername) => {
     const confirm = await Swal.fire({
-      title: `${action === 'CANCEL' ? 'Cancel Match & Refund Both?' : `Award Win to ${winnerUsername}?`}`,
-      text: `Action will resolve Dispute ${dispute._id || dispute.id} and disburse funds immediately.`,
+      title: `${action === 'CANCEL' ? 'Cancel Match & Return Money To Both?' : `Declare Winner: ${winnerUsername}?`}`,
+      text: action === 'CANCEL' ? 'This will cancel the match and give entry fee back to both players.' : `This will declare ${winnerUsername} as the winner and send the prize money (₹${dispute.prizePoolRs || 900}) to their wallet immediately.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: action === 'CANCEL' ? 'var(--rose)' : 'var(--emerald)',
-      confirmButtonText: 'Confirm Resolution',
+      confirmButtonText: 'Yes, Confirm Decision',
+      cancelButtonText: 'Cancel',
       background: '#111624',
       color: '#ffffff'
     });
@@ -31,10 +32,10 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
       if (onResolve) {
         await onResolve(dispute._id || dispute.id, action, winnerUsername, adminNotes);
       }
-      Swal.fire({ title: 'Dispute Resolved', text: `Match resolved successfully.`, icon: 'success', background: '#111624', color: '#ffffff' });
+      Swal.fire({ title: 'Conflict Resolved', text: `Match decision saved successfully.`, icon: 'success', background: '#111624', color: '#ffffff' });
       onClose();
     } catch (e) {
-      Swal.fire({ title: 'Error', text: e.message || 'Failed to resolve dispute', icon: 'error', background: '#111624', color: '#ffffff' });
+      Swal.fire({ title: 'Error', text: e.message || 'Failed to resolve conflict', icon: 'error', background: '#111624', color: '#ffffff' });
     } finally {
       setActionLoading(false);
     }
@@ -87,7 +88,7 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>
-                  Dispute Investigation Room — {dispute._id || dispute.id}
+                  Match Conflict Review — {dispute._id || dispute.id}
                 </h3>
                 <StatusBadge status={dispute.status || 'PENDING'} />
               </div>
@@ -127,10 +128,10 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
               >
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                   <ZoomIn size={24} style={{ marginBottom: '0.35rem' }} />
-                  <div style={{ fontSize: '0.78rem' }}>Click to Zoom Victory Screenshot</div>
+                  <div style={{ fontSize: '0.78rem' }}>Click to view full screenshot</div>
                 </div>
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>IP: {p1.deviceIp}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>IP Address: {p1.deviceIp}</div>
             </div>
 
             {/* Player 2 Card */}
@@ -158,18 +159,18 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
               >
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                   <ZoomIn size={24} style={{ marginBottom: '0.35rem' }} />
-                  <div style={{ fontSize: '0.78rem' }}>Click to Zoom Victory Screenshot</div>
+                  <div style={{ fontSize: '0.78rem' }}>Click to view full screenshot</div>
                 </div>
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>IP: {p2.deviceIp}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>IP Address: {p2.deviceIp}</div>
             </div>
           </div>
 
           {/* Admin Resolution Action Controls */}
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff' }}>Admin Adjudication & Mandatory Notes</h4>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff' }}>Admin Decision & Reason Note</h4>
             <textarea
-              placeholder="State clear resolution rationale for audit log..."
+              placeholder="Write the reason for your decision here..."
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
               className="custom-input"
@@ -192,7 +193,7 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
                   cursor: 'pointer'
                 }}
               >
-                🏆 Award Win to {p1.username} (₹{dispute.prizePoolRs || 900})
+                🏆 Declare Winner: {p1.username} (₹{dispute.prizePoolRs || 900})
               </button>
 
               <button
@@ -210,7 +211,7 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
                   cursor: 'pointer'
                 }}
               >
-                🏆 Award Win to {p2.username} (₹{dispute.prizePoolRs || 900})
+                🏆 Declare Winner: {p2.username} (₹{dispute.prizePoolRs || 900})
               </button>
 
               <button
@@ -227,7 +228,7 @@ export default function DisputeDetailModal({ dispute, onClose, onResolve }) {
                   cursor: 'pointer'
                 }}
               >
-                Cancel & Refund Both
+                Cancel & Return Money To Both
               </button>
             </div>
           </div>

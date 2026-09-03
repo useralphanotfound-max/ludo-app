@@ -161,7 +161,7 @@ export default function DisputeConsolePage() {
             cursor: 'pointer'
           }}
         >
-          Investigate & Resolve
+          Review & Resolve
         </button>
       )
     }
@@ -173,9 +173,9 @@ export default function DisputeConsolePage() {
         {/* Header & Sync */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">MATCH ADJUDICATION & SCREENSHOT PROOF</div>
+            <div className="micro-label">MATCH CONFLICTS & PROOF REVIEW</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Dispute Resolution & Evidence Adjudication
+              Match Conflicts & Proof Review
             </h1>
           </div>
 
@@ -195,38 +195,38 @@ export default function DisputeConsolePage() {
               gap: '0.5rem'
             }}
           >
-            <RefreshCw size={15} /> Sync Disputes Queue
+            <RefreshCw size={15} /> Refresh Conflicts List
           </button>
         </div>
 
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Pending Review" value={disputes.filter(d => (d.status || '').includes('PENDING')).length || 3} trend="Adjudication queue" trendType="neutral" icon={Clock} badgeColor="gold" />
-          <StatCard title="Resolved Today" value={disputes.filter(d => (d.status || '').includes('RESOLVED')).length || 18} trend="Clean closures" trendType="up" icon={CheckCircle2} badgeColor="emerald" />
-          <StatCard title="Avg Resolution Time" value="6.4 mins" trend="Fast support SLA" trendType="up" icon={Scale} badgeColor="emerald" />
-          <StatCard title="Dispute Rate %" value="0.6%" trend="Optimal room stability" trendType="up" icon={ShieldAlert} badgeColor="emerald" />
+          <StatCard title="Waiting Admin Review" value={disputes.filter(d => (d.status || '').includes('PENDING')).length || 3} trend="Needs your decision" trendType="neutral" icon={Clock} badgeColor="gold" />
+          <StatCard title="Resolved Today" value={disputes.filter(d => (d.status || '').includes('RESOLVED')).length || 18} trend="Closed conflicts" trendType="up" icon={CheckCircle2} badgeColor="emerald" />
+          <StatCard title="Average Review Time" value="6.4 mins" trend="Fast support" trendType="up" icon={Scale} badgeColor="emerald" />
+          <StatCard title="Conflict Rate %" value="0.6%" trend="Healthy game rooms" trendType="up" icon={ShieldAlert} badgeColor="emerald" />
         </div>
 
         {/* Analytics: Dispute Rate Trend & Resolution Share */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
-          <ChartCard title="30-Day Platform Dispute Rate Trend (%)" subtitle="Percentage of total played rooms ending in dispute claim" loading={loading}>
+          <ChartCard title="30-Day Match Conflict Rate (%)" subtitle="Percentage of played games ending in conflict" loading={loading}>
             <LineChartWidget data={disputeTrendData} xKey="name" yKey="rate" color="#f59e0b" formatY={(v) => `${v}%`} />
           </ChartCard>
 
-          <ChartCard title="Resolution Award Share" subtitle="Player 1 vs Player 2 vs Refunds" loading={loading}>
+          <ChartCard title="Winner Decision Share" subtitle="Player 1 vs Player 2 vs Money Refunded" loading={loading}>
             <DonutChartWidget data={resolutionDonutData} />
           </ChartCard>
         </div>
 
         {/* Search & Filter Toolbar */}
         <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search by Dispute ID, Match ID, or Username..." />
+          <SearchBar value={search} onChange={setSearch} placeholder="Search by Conflict ID, Match ID, or Username..." />
 
           <FilterGroup
             options={[
-              { label: 'All Disputes', value: 'ALL' },
-              { label: 'Pending Review', value: 'PENDING' },
-              { label: 'Resolved Only', value: 'RESOLVED' }
+              { label: 'All Conflicts', value: 'ALL' },
+              { label: 'Waiting Review', value: 'PENDING' },
+              { label: 'Completed Decisions', value: 'RESOLVED' }
             ]}
             activeValue={statusFilter}
             onChange={setStatusFilter}

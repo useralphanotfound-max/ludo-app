@@ -188,9 +188,9 @@ export default function WalletControlPage() {
         {/* Header & Sync */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">FINANCIAL CONTROL CONSOLE</div>
+            <div className="micro-label">USER BALANCES</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Wallet Balance Oversight & Adjustments
+              User Balances & Funds Management
             </h1>
           </div>
 
@@ -210,16 +210,16 @@ export default function WalletControlPage() {
               gap: '0.5rem'
             }}
           >
-            <RefreshCw size={15} /> Sync Balances
+            <RefreshCw size={15} /> Refresh Balances
           </button>
         </div>
 
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Cash Pool (Deposit)" value={`₹${totalCashRs.toLocaleString('en-IN')}`} trend={walletStats?.growthTrend || '+0.0% this week'} trendType="up" icon={Coins} badgeColor="emerald" />
-          <StatCard title="Winning Pool" value={`₹${totalWinningRs.toLocaleString('en-IN')}`} trend="Payout-ready" trendType="up" icon={TrendingUp} badgeColor="gold" />
-          <StatCard title="Bonus Balance Pool" value={`₹${totalBonusRs.toLocaleString('en-IN')}`} trend="Promos active" trendType="neutral" icon={ShieldCheck} badgeColor="purple" />
-          <StatCard title="Frozen Wallets" value={frozenCount} trend="Suspended wallets" trendType="down" icon={Lock} badgeColor="rose" />
+          <StatCard title="Total Deposit Money" value={`₹${totalCashRs.toLocaleString('en-IN')}`} trend={walletStats?.growthTrend || '+0.0% this week'} trendType="up" icon={Coins} badgeColor="emerald" />
+          <StatCard title="Total Winnings Money" value={`₹${totalWinningRs.toLocaleString('en-IN')}`} trend="Ready for cashout" trendType="up" icon={TrendingUp} badgeColor="gold" />
+          <StatCard title="Total Bonus Money" value={`₹${totalBonusRs.toLocaleString('en-IN')}`} trend="Promotions active" trendType="neutral" icon={ShieldCheck} badgeColor="purple" />
+          <StatCard title="Frozen Accounts" value={frozenCount} trend="Locked wallets" trendType="down" icon={Lock} badgeColor="rose" />
         </div>
 
         {/* Analytics: 7-Day Cash Flow & Pool Distribution */}

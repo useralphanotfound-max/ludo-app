@@ -104,15 +104,15 @@ export default function FinancialLedgerPage() {
         {/* Header & CSV Export */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">DOUBLE-ENTRY FINANCIAL AUDIT</div>
+            <div className="micro-label">MONEY & PAYMENT HISTORY</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Financial Ledger & Real-Time Flow Console
+              Transaction & Payment History
             </h1>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button
-              onClick={() => Swal.fire({ title: 'Exporting CSV', text: 'Full financial ledger export started', icon: 'info', background: '#111624', color: '#ffffff' })}
+              onClick={() => Swal.fire({ title: 'Exporting CSV', text: 'Financial transaction export started', icon: 'info', background: '#111624', color: '#ffffff' })}
               style={{
                 padding: '0.6rem 1.25rem',
                 borderRadius: 'var(--radius-md)',
@@ -127,7 +127,7 @@ export default function FinancialLedgerPage() {
                 gap: '0.5rem'
               }}
             >
-              <Download size={15} /> Export Ledger CSV
+              <Download size={15} /> Export CSV
             </button>
             <button
               onClick={fetchTransactions}
@@ -145,22 +145,22 @@ export default function FinancialLedgerPage() {
                 gap: '0.5rem'
               }}
             >
-              <RefreshCw size={15} /> Sync Ledger
+              <RefreshCw size={15} /> Refresh List
             </button>
           </div>
         </div>
 
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Total Flow Volume" value={`₹${totalVolume.toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={DollarSign} badgeColor="emerald" />
-          <StatCard title="Net Flow (In - Out)" value={`₹${netFlow.toLocaleString('en-IN')}`} trend="Positive cash liquidity" trendType="up" icon={ArrowDownLeft} badgeColor="emerald" />
+          <StatCard title="Total Money Moved" value={`₹${totalVolume.toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={DollarSign} badgeColor="emerald" />
+          <StatCard title="Net Money Saved" value={`₹${netFlow.toLocaleString('en-IN')}`} trend="Positive cash liquidity" trendType="up" icon={ArrowDownLeft} badgeColor="emerald" />
           <StatCard title="Total Deposits Count" value={depositCount} trend="Confirmed in DB" trendType="up" icon={Receipt} badgeColor="emerald" />
-          <StatCard title="Risk-Cleared Ledger" value="100% Audited" trend="Zero unmapped flow" trendType="neutral" icon={ShieldCheck} badgeColor="gold" />
+          <StatCard title="Audit Status" value="100% Verified" trend="All payments tracked" trendType="neutral" icon={ShieldCheck} badgeColor="gold" />
         </div>
 
         {/* Analytics: Transaction Type Breakdown */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
-          <ChartCard title="Transaction Volume Distribution by Flow Type" subtitle="Deposits vs Withdrawals vs Game Entries vs Prizes vs Bonus" loading={loading}>
+          <ChartCard title="Money Moved by Category" subtitle="Deposits vs Withdrawals vs Game Entries vs Prizes vs Bonus" loading={loading}>
             <BarChartWidget data={typeBreakdownData} xKey="name" bars={[{ key: 'amount', color: '#10b981', name: 'Volume (₹)' }]} formatY={(v) => `₹${(v/1000).toFixed(0)}k`} />
           </ChartCard>
         </div>

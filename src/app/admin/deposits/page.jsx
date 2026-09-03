@@ -150,9 +150,9 @@ export default function DepositOperationsPage() {
         {/* Header & Export */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">DEPOSIT RECONCILIATION & AUDIT</div>
+            <div className="micro-label">DEPOSIT RECORDS</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Deposit Operations & Verification Queue
+              Deposit Records & Payment Methods
             </h1>
           </div>
 
@@ -191,7 +191,7 @@ export default function DepositOperationsPage() {
                 gap: '0.5rem'
               }}
             >
-              <RefreshCw size={15} /> Sync Queue
+              <RefreshCw size={15} /> Refresh List
             </button>
           </div>
         </div>
@@ -199,9 +199,9 @@ export default function DepositOperationsPage() {
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           <StatCard title="Total Deposit Volume" value={`₹${(summaryStats?.totalDepositsRs !== undefined ? summaryStats.totalDepositsRs : deposits.reduce((sum, d) => sum + (d.amountRs || 0), 0)).toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={ArrowDownLeft} badgeColor="emerald" />
-          <StatCard title="Pending Deposits Queue" value={summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : deposits.filter(d => d.status === 'PENDING').length} trend="Awaiting verification" trendType="neutral" icon={Clock} badgeColor="gold" />
-          <StatCard title="Successful Credited" value={summaryStats?.successfulCount !== undefined ? summaryStats.successfulCount : deposits.filter(d => d.status === 'SUCCESSFUL').length} trend="Verified & Credited" trendType="up" icon={CheckCircle} badgeColor="emerald" />
-          <StatCard title="Unverified Submissions" value={summaryStats?.failedCount !== undefined ? summaryStats.failedCount : deposits.filter(d => d.status === 'FAILED').length} trend="Needs review" trendType="down" icon={ShieldAlert} badgeColor="rose" />
+          <StatCard title="Successful Payments" value={summaryStats?.successfulCount !== undefined ? summaryStats.successfulCount : deposits.filter(d => d.status === 'SUCCESSFUL').length} trend="Confirmed in bank" trendType="up" icon={CheckCircle} badgeColor="emerald" />
+          <StatCard title="Waiting Approval" value={summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : deposits.filter(d => d.status === 'PENDING').length} trend="Pending check" trendType="neutral" icon={Clock} badgeColor="gold" />
+          <StatCard title="Failed Payments" value={summaryStats?.failedCount !== undefined ? summaryStats.failedCount : deposits.filter(d => d.status === 'FAILED').length} trend="Rejected transactions" trendType="down" icon={ShieldAlert} badgeColor="rose" />
         </div>
 
         {/* Analytics: 14-Day Deposit Volume & Payment Method Share */}

@@ -22,7 +22,7 @@ export default function LegacyDashboardRedirect() {
         fontWeight: 800
       }}
     >
-      Redirecting to Royal Ludo Admin OS...
+      Redirecting to Royal Ludo Admin Panel...
     </div>
   );
 }

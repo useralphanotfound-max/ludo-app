@@ -208,67 +208,74 @@ export async function GET(req) {
       revenue: matchMap[idx + 1] || 0
     }));
 
-    return NextResponse.json({
-      status: true,
-      message: 'Comprehensive superadmin dashboard metrics retrieved',
-      data: {
-        users: {
-          total: totalUsers ?? 0,
-          active: activeUsers ?? 0,
-          newToday: newUsersToday ?? 0,
-          newThisWeek: newUsersThisWeek ?? 0,
-          suspended: suspendedUsers ?? 0,
-          banned: bannedUsers ?? 0
-        },
-        financials: {
-          totalWalletBalanceRs: Math.round(((walletTotals.totalDeposit || 0) + (walletTotals.totalWinning || 0) + (walletTotals.totalBonus || 0)) / 100),
-          walletBreakdownRs: {
-            cash: Math.round((walletTotals.totalDeposit || 0) / 100),
-            winning: Math.round((walletTotals.totalWinning || 0) / 100),
-            bonus: Math.round((walletTotals.totalBonus || 0) / 100),
-            locked: Math.round((walletTotals.totalLocked || 0) / 100)
+    return NextResponse.json(
+      {
+        status: true,
+        message: 'Comprehensive superadmin dashboard metrics retrieved',
+        data: {
+          users: {
+            total: totalUsers ?? 0,
+            active: activeUsers ?? 0,
+            newToday: newUsersToday ?? 0,
+            newThisWeek: newUsersThisWeek ?? 0,
+            suspended: suspendedUsers ?? 0,
+            banned: bannedUsers ?? 0
           },
-          deposits: {
-            totalRs: Math.round(totalDepositsPaise / 100),
-            todayRs: Math.round(todayDepositsPaise / 100),
-            pendingRs: Math.round(pendingDepositsPaise / 100)
+          financials: {
+            totalWalletBalanceRs: Math.round(((walletTotals.totalDeposit || 0) + (walletTotals.totalWinning || 0) + (walletTotals.totalBonus || 0)) / 100),
+            walletBreakdownRs: {
+              cash: Math.round((walletTotals.totalDeposit || 0) / 100),
+              winning: Math.round((walletTotals.totalWinning || 0) / 100),
+              bonus: Math.round((walletTotals.totalBonus || 0) / 100),
+              locked: Math.round((walletTotals.totalLocked || 0) / 100)
+            },
+            deposits: {
+              totalRs: Math.round(totalDepositsPaise / 100),
+              todayRs: Math.round(todayDepositsPaise / 100),
+              pendingRs: Math.round(pendingDepositsPaise / 100)
+            },
+            withdrawals: {
+              totalRs: Math.round(totalWithdrawalsPaise / 100),
+              todayRs: Math.round(todayWithdrawalsPaise / 100),
+              pendingRs: Math.round(pendingWithdrawalsPaise / 100)
+            },
+            revenueRs: Math.round(totalGGRPaise / 100),
+            bonusesRs: Math.round(totalBonusPaise / 100),
+            refundsRs: Math.round(totalRefundPaise / 100),
+            revenueTrend
           },
-          withdrawals: {
-            totalRs: Math.round(totalWithdrawalsPaise / 100),
-            todayRs: Math.round(todayWithdrawalsPaise / 100),
-            pendingRs: Math.round(pendingWithdrawalsPaise / 100)
+          games: {
+            today: gamesToday ?? 0,
+            running: activeMatches || activeRooms || 0,
+            completed: completedGames ?? 0,
+            cancelled: cancelledGames ?? 0,
+            disputed: disputedGames ?? 0,
+            pendingResults: pendingDisputes ?? 0,
+            totalEntryRs: 0,
+            totalPrizesRs: Math.round(totalPrizesPaise / 100)
           },
-          revenueRs: Math.round(totalGGRPaise / 100),
-          bonusesRs: Math.round(totalBonusPaise / 100),
-          refundsRs: Math.round(totalRefundPaise / 100),
-          revenueTrend
-        },
-        games: {
-          today: gamesToday ?? 0,
-          running: activeMatches || activeRooms || 0,
-          completed: completedGames ?? 0,
-          cancelled: cancelledGames ?? 0,
-          disputed: disputedGames ?? 0,
-          pendingResults: pendingDisputes ?? 0,
-          totalEntryRs: 0,
-          totalPrizesRs: Math.round(totalPrizesPaise / 100)
-        },
-        pending: {
-          disputes: pendingDisputes ?? 0,
-          withdrawals: pendingWithdrawalsCount ?? 0
-        },
-        security: {
-          unresolvedAlertsCount: unresolvedAlertsCount ?? 0,
-          recentAlerts: securityAlerts || []
-        },
-        settings: {
-          commissionPct: settings?.platformCommissionPct ?? 10,
-          maintenanceMode: settings?.maintenanceMode ?? false
-        },
-        recentTransactions: formattedTicker,
-        recentAuditLogs: recentAuditLogs || []
+          pending: {
+            disputes: pendingDisputes ?? 0,
+            withdrawals: pendingWithdrawalsCount ?? 0
+          },
+          security: {
+            unresolvedAlertsCount: unresolvedAlertsCount ?? 0,
+            recentAlerts: securityAlerts || []
+          },
+          settings: {
+            commissionPct: settings?.platformCommissionPct ?? 10,
+            maintenanceMode: settings?.maintenanceMode ?? false
+          },
+          recentTransactions: formattedTicker,
+          recentAuditLogs: recentAuditLogs || []
+        }
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=3, stale-while-revalidate=10'
+        }
       }
-    });
+    );
   } catch (error) {
     console.error('[Dashboard API Error]', error.message);
     return NextResponse.json({

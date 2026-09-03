@@ -56,6 +56,9 @@ export async function connectDB() {
     const opts = {
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
+      maxPoolSize: 25,
+      minPoolSize: 5,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = resolveMongodbSrv(MONGODB_URI)

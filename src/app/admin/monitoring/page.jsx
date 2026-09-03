@@ -58,9 +58,9 @@ export default function InfrastructureMonitoringPage() {
         {/* Header & Sync */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">INFRASTRUCTURE HEALTH & CLUSTER TELEMETRY</div>
+            <div className="micro-label">SERVER & SYSTEM HEALTH</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.03em' }}>
-              <Activity size={26} color="var(--emerald-light)" /> System & Infrastructure Monitoring
+              <Activity size={26} color="var(--emerald-light)" /> Server Status & System Health
             </h1>
           </div>
 
@@ -80,24 +80,24 @@ export default function InfrastructureMonitoringPage() {
               gap: '0.5rem'
             }}
           >
-            <RefreshCw size={15} /> Sync Infrastructure Nodes
+            <RefreshCw size={15} /> Refresh Server Status
           </button>
         </div>
 
         {/* 3 Infrastructure Metric Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="API Response Latency" value={`${health?.apiLatencyMs || 18} ms`} trend="Optimal response speed" trendType="up" icon={Gauge} badgeColor="emerald" />
-          <StatCard title="MongoDB Cluster Status" value={health?.dbStatus || 'CONNECTED'} trend="0% query drops" trendType="up" icon={Database} badgeColor="emerald" />
-          <StatCard title="Server CPU / RAM Load" value={`${health?.cpuUsagePct || 14}% / ${health?.memoryUsagePct || 32}%`} trend="Normal capacity" trendType="neutral" icon={Cpu} badgeColor="gold" />
+          <StatCard title="Server Response Speed" value={`${health?.apiLatencyMs || 18} ms`} trend="Fast speed" trendType="up" icon={Gauge} badgeColor="emerald" />
+          <StatCard title="Database Connection Status" value={health?.dbStatus || 'CONNECTED'} trend="0% errors" trendType="up" icon={Database} badgeColor="emerald" />
+          <StatCard title="Server CPU / RAM Load" value={`${health?.cpuUsagePct || 14}% / ${health?.memoryUsagePct || 32}%`} trend="Normal load" trendType="neutral" icon={Cpu} badgeColor="gold" />
         </div>
 
         {/* Analytics Charts: API Latency Sparkline & DB Query Time Trend */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-          <ChartCard title="Real-Time API Latency Sparkline (ms)" subtitle="Average Next.js API route response time" loading={loading}>
+          <ChartCard title="Server Speed Graph (ms)" subtitle="Average API response speed in milliseconds" loading={loading}>
             <AreaChartWidget data={latencyChartData} xKey="name" yKey="latency" color="#10b981" formatY={(v) => `${v}ms`} />
           </ChartCard>
 
-          <ChartCard title="Database Query Execution Time (ms)" subtitle="MongoDB Mongoose query completion latency" loading={loading}>
+          <ChartCard title="Database Speed Graph (ms)" subtitle="Database response speed in milliseconds" loading={loading}>
             <AreaChartWidget data={dbQueryChartData} xKey="name" yKey="ms" color="#3b82f6" formatY={(v) => `${v}ms`} />
           </ChartCard>
         </div>

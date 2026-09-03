@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { SkeletonTable } from '../feedback/Skeleton';
 import EmptyState from '../feedback/EmptyState';
 import Pagination from './Pagination';
@@ -12,11 +12,15 @@ export default function DataTable({
   emptyTitle = 'No Records Found',
   emptyDescription = 'Try adjusting your search or filters.',
   onRowClick,
-  page = 1,
-  totalPages = 1,
-  totalItems = 0,
-  onPageChange
+  page: serverPage,
+  totalPages: serverTotalPages,
+  totalItems: serverTotalItems,
+  onPageChange: serverOnPageChange,
+  defaultLimit = 10
 }) {
+  const [localPage, setLocalPage] = useState(1);
+  const [localLimit, setLocalLimit] = useState(defaultLimit);
+
   if (loading) {
     return <SkeletonTable rows={6} columns={columns.length || 5} />;
   }
@@ -24,6 +28,35 @@ export default function DataTable({
   if (!data || data.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
+
+  const isServerPaginated = Boolean(serverOnPageChange);
+
+  // Client-side pagination calculations if serverOnPageChange is not provided
+  const activePage = isServerPaginated ? (serverPage || 1) : localPage;
+  const activeLimit = localLimit;
+  const totalRecords = isServerPaginated ? (serverTotalItems || data.length) : data.length;
+  const computedTotalPages = isServerPaginated
+    ? (serverTotalPages || Math.ceil(totalRecords / activeLimit) || 1)
+    : Math.ceil(data.length / activeLimit) || 1;
+
+  const displayData = isServerPaginated
+    ? data
+    : data.slice((activePage - 1) * activeLimit, activePage * activeLimit);
+
+  const handlePageChange = (newPage) => {
+    if (isServerPaginated) {
+      serverOnPageChange(newPage);
+    } else {
+      setLocalPage(newPage);
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLocalLimit(newLimit);
+    if (!isServerPaginated) {
+      setLocalPage(1);
+    }
+  };
 
   return (
     <div
@@ -62,7 +95,7 @@ export default function DataTable({
             </tr>
           </thead>
           <tbody>
-            {data.map((row, rIdx) => (
+            {displayData.map((row, rIdx) => (
               <tr
                 key={row.id || row._id || rIdx}
                 onClick={() => onRowClick && onRowClick(row)}
@@ -96,14 +129,14 @@ export default function DataTable({
         </table>
       </div>
 
-      {onPageChange && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          totalItems={totalItems || data.length}
-          onPageChange={onPageChange}
-        />
-      )}
+      <Pagination
+        page={activePage}
+        totalPages={computedTotalPages}
+        totalItems={totalRecords}
+        limit={activeLimit}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
     </div>
   );
 }

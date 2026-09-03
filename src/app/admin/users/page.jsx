@@ -191,7 +191,7 @@ export default function UserOperationsPage() {
             cursor: 'pointer'
           }}
         >
-          Inspect 360°
+          View Profile
         </button>
       )
     }
@@ -203,9 +203,9 @@ export default function UserOperationsPage() {
         {/* Header & Sub-Dashboard */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">USER OPERATIONS CONSOLE</div>
+            <div className="micro-label">USER ACCOUNTS</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Player Accounts & Compliance Control
+              User Accounts & Profile Management
             </h1>
           </div>
 
@@ -246,7 +246,7 @@ export default function UserOperationsPage() {
                 gap: '0.5rem'
               }}
             >
-              <RefreshCw size={15} /> Sync Users
+              <RefreshCw size={15} /> Refresh List
             </button>
           </div>
         </div>
@@ -255,8 +255,8 @@ export default function UserOperationsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           <StatCard title="Total Players" value={summaryStats?.totalUsers || pagination.total || users.length || 0} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={Users} />
           <StatCard title="Active Accounts" value={users.filter(u => u.status === 'ACTIVE').length} trend="Active in rooms" trendType="up" icon={Activity} badgeColor="emerald" />
-          <StatCard title="KYC Verification Queue" value={users.filter(u => u.kycStatus !== 'VERIFIED').length} trend="Review queue" trendType="neutral" icon={Shield} badgeColor="gold" />
-          <StatCard title="High-Risk Flagged" value={users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length} trend="Needs inspection" trendType="down" icon={TrendingDown} badgeColor="rose" />
+          <StatCard title="ID Verification Pending" value={users.filter(u => u.kycStatus !== 'VERIFIED').length} trend="Needs check" trendType="neutral" icon={Shield} badgeColor="gold" />
+          <StatCard title="Suspicious Accounts" value={users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length} trend="Check activity" trendType="down" icon={TrendingDown} badgeColor="rose" />
         </div>
 
         {/* Analytics Row: 30-Day Registration Trend & KYC Donut */}

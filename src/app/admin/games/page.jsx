@@ -88,9 +88,9 @@ export default function GameCatalogPage() {
         {/* Header & Sync */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">MATCH ROOM CATALOG & RECORDS</div>
+            <div className="micro-label">GAMES & MATCH HISTORY</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Game Catalog & Match History Telemetry
+              Game List & Match Records
             </h1>
           </div>
 
@@ -110,21 +110,21 @@ export default function GameCatalogPage() {
               gap: '0.5rem'
             }}
           >
-            <RefreshCw size={15} /> Sync Catalog
+            <RefreshCw size={15} /> Refresh List
           </button>
         </div>
 
         {/* 4 Stat Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Live Rooms Playing" value={summaryStats?.liveCount !== undefined ? summaryStats.liveCount : matches.filter(m => (m.status || '').toLowerCase() === 'playing').length} trend="Real-time" trendType="up" icon={Activity} badgeColor="emerald" />
-          <StatCard title="Completed Matches" value={summaryStats?.completedCount !== undefined ? summaryStats.completedCount : matches.filter(m => (m.status || '').toLowerCase() === 'completed').length} trend="Resolved outcomes" trendType="up" icon={CheckCircle} badgeColor="emerald" />
-          <StatCard title="Disputed Matches" value={summaryStats?.disputedCount !== undefined ? summaryStats.disputedCount : matches.filter(m => (m.status || '').toLowerCase() === 'disputed').length} trend="Needs review" trendType="down" icon={AlertTriangle} badgeColor="gold" />
-          <StatCard title="Cancelled Rooms" value={summaryStats?.cancelledCount !== undefined ? summaryStats.cancelledCount : matches.filter(m => (m.status || '').toLowerCase() === 'cancelled').length} trend="Fees refunded" trendType="neutral" icon={CircleSlash} badgeColor="rose" />
+          <StatCard title="Active Games Playing" value={summaryStats?.liveCount !== undefined ? summaryStats.liveCount : matches.filter(m => (m.status || '').toLowerCase() === 'playing').length} trend="Real-time" trendType="up" icon={Activity} badgeColor="emerald" />
+          <StatCard title="Completed Matches" value={summaryStats?.completedCount !== undefined ? summaryStats.completedCount : matches.filter(m => (m.status || '').toLowerCase() === 'completed').length} trend="Finished games" trendType="up" icon={CheckCircle} badgeColor="emerald" />
+          <StatCard title="Conflicting Matches" value={summaryStats?.disputedCount !== undefined ? summaryStats.disputedCount : matches.filter(m => (m.status || '').toLowerCase() === 'disputed').length} trend="Needs review" trendType="down" icon={AlertTriangle} badgeColor="gold" />
+          <StatCard title="Cancelled Rooms" value={summaryStats?.cancelledCount !== undefined ? summaryStats.cancelledCount : matches.filter(m => (m.status || '').toLowerCase() === 'cancelled').length} trend="Money refunded" trendType="neutral" icon={CircleSlash} badgeColor="rose" />
         </div>
 
         {/* Analytics: Entry Fee Tier Distribution */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
-          <ChartCard title="Match Room Distribution by Entry Fee Tier" subtitle="Player preference volume across stake tiers" loading={loading}>
+          <ChartCard title="Matches List by Entry Fee Amount" subtitle="Popular entry fee tiers chosen by players" loading={loading}>
             <BarChartWidget data={entryFeeTierData} xKey="name" bars={[{ key: 'rooms', color: '#10b981', name: 'Match Rooms' }]} />
           </ChartCard>
         </div>
