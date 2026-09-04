@@ -224,12 +224,11 @@ export default function WithdrawalManagementPage() {
           </div>
         </div>
 
-        {/* 4 Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        {/* 3 Stat Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
           <StatCard title="Pending Withdrawals" value={summaryStats?.pendingCount !== undefined ? summaryStats.pendingCount : withdrawals.filter(w => w.status === 'PENDING').length} trend="Waiting approval" trendType="neutral" icon={Clock} badgeColor="gold" />
           <StatCard title="Approved Today" value={`₹${(summaryStats?.approvedTodayRs !== undefined ? summaryStats.approvedTodayRs : withdrawals.filter(w => w.status === 'APPROVED').reduce((sum, w) => sum + (w.amountRs || 0), 0)).toLocaleString('en-IN')}`} trend={summaryStats?.growthTrend || 'Bank transfer queued'} trendType="up" icon={CheckCircle} badgeColor="emerald" />
           <StatCard title="Rejected / Refunded" value={summaryStats?.rejectedCount !== undefined ? summaryStats.rejectedCount : withdrawals.filter(w => w.status === 'REJECTED').length} trend="Returned to balance" trendType="down" icon={ShieldAlert} badgeColor="rose" />
-          <StatCard title="Average Cashout Speed" value={summaryStats?.avgProcessingTime || '3.5 mins'} trend="Instant UPI Active" trendType="up" icon={ArrowUpRight} badgeColor="emerald" />
         </div>
 
         {/* Multi-Admin Threshold Notice Banner & Chart */}

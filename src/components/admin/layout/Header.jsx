@@ -2,15 +2,18 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { PanelLeftClose, PanelLeft, Search, LogOut, Shield, ShieldCheck, Eye, RefreshCw } from 'lucide-react';
+import { PanelLeftClose, PanelLeft, Search, LogOut, Shield, ShieldCheck, Eye, RefreshCw, Menu, X, Wrench, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function Header({
   admin,
   collapsed,
   setCollapsed,
+  mobileOpen,
+  setMobileOpen,
   onOpenSearch,
   onLogout,
-  systemStatus = { text: 'All Systems Operational', isHealthy: true },
+  maintenanceMode = false,
+  onToggleMaintenance,
   previewRole,
   onExitPreview
 }) {
@@ -23,17 +26,39 @@ export default function Header({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 1.5rem',
+        padding: '0 1rem',
         position: 'sticky',
         top: 0,
         zIndex: 40
       }}
     >
-      {/* Search Input Bar & Collapse Toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '520px' }}>
+      {/* Mobile Menu Toggle & Desktop Collapse Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, maxWidth: '520px' }}>
+        {/* Mobile Hamburger Toggle Button */}
+        {setMobileOpen && (
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="mobile-toggle-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--emerald-light)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.25rem'
+            }}
+            title="Toggle Navigation Menu"
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        )}
+
+        {/* Desktop Collapse Toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          className="desktop-collapse-btn"
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', alignItems: 'center' }}
           title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {collapsed ? <PanelLeft size={19} /> : <PanelLeftClose size={19} />}
@@ -102,27 +127,30 @@ export default function Header({
           </div>
         )}
 
-        {/* Real Systems Pulse Link */}
-        <Link
-          href="/admin/monitoring"
+        {/* Under Maintenance Enable / Disable Toggle */}
+        <button
+          onClick={onToggleMaintenance}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.78rem',
-            color: systemStatus.isHealthy ? 'var(--emerald-light)' : 'var(--rose)',
-            fontWeight: 700,
-            textDecoration: 'none',
-            padding: '0.35rem 0.75rem',
+            gap: '0.6rem',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            padding: '0.4rem 0.85rem',
             borderRadius: 'var(--radius-full)',
-            backgroundColor: systemStatus.isHealthy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-            border: systemStatus.isHealthy ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(244, 63, 94, 0.25)'
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: maintenanceMode ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.1)',
+            border: maintenanceMode ? '1px solid rgba(244, 63, 94, 0.5)' : '1px solid rgba(16, 185, 129, 0.3)',
+            color: maintenanceMode ? 'var(--rose)' : 'var(--emerald-light)',
+            boxShadow: maintenanceMode ? '0 0 10px rgba(244, 63, 94, 0.2)' : 'none'
           }}
-          title="Click to view full infrastructure monitoring"
+          title={maintenanceMode ? "Under Maintenance is currently ENABLED. Click to Disable." : "Under Maintenance is currently DISABLED. Click to Enable."}
         >
-          <span className="pulse-indicator" style={{ backgroundColor: systemStatus.isHealthy ? 'var(--emerald)' : 'var(--rose)' }} />
-          <span>{systemStatus.text}</span>
-        </Link>
+          <Wrench size={14} />
+          <span>Under Maintenance: <strong style={{ color: maintenanceMode ? '#f87171' : '#4ade80' }}>{maintenanceMode ? 'ENABLED' : 'DISABLED'}</strong></span>
+          {maintenanceMode ? <ToggleRight size={22} color="var(--rose)" /> : <ToggleLeft size={22} color="var(--emerald-light)" />}
+        </button>
 
         {/* Admin Avatar & Role Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

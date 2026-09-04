@@ -23,7 +23,7 @@ export default function AppShell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pendingCounts, setPendingCounts] = useState({ disputes: 0, withdrawals: 0, deposits: 0, liveGames: 0 });
-  const [systemStatus, setSystemStatus] = useState({ text: 'All Systems Operational', isHealthy: true });
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [previewRole, setPreviewRole] = useState(null);
 
   useEffect(() => {
@@ -59,18 +59,28 @@ export default function AppShell({ children }) {
           deposits: res.data.financials?.deposits?.pendingRs || 0,
           liveGames: res.data.games?.running || 0
         });
+        if (res.data.settings?.maintenanceMode !== undefined) {
+          setMaintenanceMode(res.data.settings.maintenanceMode);
+        }
       }
 
-      // Monitoring fetch
-      const monRes = await apiFetch('/admin/monitoring');
-      if (monRes.status && monRes.data) {
-        const isHealthy = monRes.data.apiStatus === 'HEALTHY' && monRes.data.dbStatus === 'CONNECTED';
-        setSystemStatus({
-          text: isHealthy ? 'All Systems Operational' : 'Services Degraded',
-          isHealthy
-        });
+      // Fetch settings if maintenanceMode not present in dashboard
+      const settingsRes = await apiFetch('/admin/settings');
+      if (settingsRes.status && settingsRes.data) {
+        setMaintenanceMode(settingsRes.data.maintenanceMode || false);
       }
     } catch (e) { }
+  };
+
+  const handleToggleMaintenance = async () => {
+    const nextVal = !maintenanceMode;
+    setMaintenanceMode(nextVal);
+    try {
+      await apiFetch('/admin/settings', 'POST', { maintenanceMode: nextVal });
+    } catch (e) {
+      console.error('Failed to toggle maintenance mode', e);
+      setMaintenanceMode(!nextVal);
+    }
   };
 
   const handleLogout = () => {
@@ -113,9 +123,12 @@ export default function AppShell({ children }) {
           admin={admin}
           collapsed={collapsed}
           setCollapsed={setCollapsed}
+          mobileOpen={mobileOpen}
+          setMobileOpen={setMobileOpen}
           onOpenSearch={() => setSearchOpen(true)}
           onLogout={handleLogout}
-          systemStatus={systemStatus}
+          maintenanceMode={maintenanceMode}
+          onToggleMaintenance={handleToggleMaintenance}
           previewRole={previewRole}
           onExitPreview={handleExitPreview}
         />

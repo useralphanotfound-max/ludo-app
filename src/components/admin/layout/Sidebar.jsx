@@ -129,6 +129,7 @@ export default function Sidebar({
       )}
 
       <aside
+        className={`sidebar-aside ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
           width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)',
           backgroundColor: 'var(--bg-sidebar)',

@@ -1,72 +1,106 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { Wallet } from '@/lib/models/Wallet';
 import { WithdrawalRequest } from '@/lib/models/WithdrawalRequest';
+import { debitWallet } from '@/lib/walletHelper';
+import { GameSettings } from '@/lib/models/GameSettings';
+import jwt from 'jsonwebtoken';
 
-import { getAuthUser } from '@/lib/authHelper';
+const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
+
+function getUserFromToken(req) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '').trim();
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
+}
 
 export async function POST(req) {
   try {
     await connectDB();
+    const userPayload = getUserFromToken(req);
+    if (!userPayload) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication token required' }
+      }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { amountRs, payoutMethod = 'UPI', upiId, accountNumber, ifscCode, accountHolderName, userId: bodyUserId } = body;
+    const { amount, withdrawal_method, upi_id, account_number, ifsc_code } = body;
 
-    if (!amountRs || amountRs <= 0) {
-      return NextResponse.json({ status: false, message: 'Valid amount required' }, { status: 400 });
-    }
-
-    let user = null;
-    if (bodyUserId) {
-      user = await User.findById(bodyUserId);
-    }
-    if (!user) {
-      user = await getAuthUser(req);
-    }
-    if (!user) {
-      user = await User.findOne({ role: 'USER', status: 'ACTIVE' });
-    }
-    if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
-
-    const amountPaise = Math.round(amountRs * 100);
-    const wallet = await Wallet.findOne({ userId: user._id });
-    if (!wallet) return NextResponse.json({ status: false, message: 'Wallet not found' }, { status: 404 });
-
-    const availableWithdrawable = wallet.depositBalance + wallet.winningBalance;
-    if (amountPaise > availableWithdrawable) {
-      return NextResponse.json({ status: false, message: 'Insufficient withdrawable balance' }, { status: 400 });
+    const withdrawAmt = Number(amount);
+    if (!withdrawAmt || withdrawAmt <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'INVALID_AMOUNT', message: 'Please enter a valid withdrawal amount' }
+      }, { status: 400 });
     }
 
-    if (wallet.winningBalance >= amountPaise) {
-      wallet.winningBalance -= amountPaise;
-    } else {
-      const remainder = amountPaise - wallet.winningBalance;
-      wallet.winningBalance = 0;
-      wallet.depositBalance -= remainder;
+    let settings = await GameSettings.findOne({ key: 'global_settings' });
+    const minWithdraw = settings?.minWithdrawRs || 100;
+
+    if (withdrawAmt < minWithdraw) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'MIN_WITHDRAWAL_LIMIT', message: `Minimum withdrawal amount is ₹${minWithdraw}` }
+      }, { status: 400 });
     }
-    wallet.lockedBalance += amountPaise;
-    await wallet.save();
+
+    // Debit wallet specifically from winningBalance (Strict No Negative Balance!)
+    const { wallet, transaction } = await debitWallet({
+      userId: userPayload.userId,
+      amount: withdrawAmt,
+      type: 'WITHDRAWAL',
+      subBalanceType: 'winning',
+      referenceId: `WD_${Date.now()}`,
+      description: `Withdrawal Request of ₹${withdrawAmt} to ${withdrawal_method || 'UPI'}`
+    });
 
     const withdrawal = await WithdrawalRequest.create({
-      userId: user._id,
-      username: user.username,
-      mobile: user.mobile,
-      amountPaise,
-      payoutMethod,
-      accountDetails: { upiId, accountNumber, ifscCode, accountHolderName },
+      userId: userPayload.userId,
+      requestId: `WR_${Date.now()}`,
+      amount: withdrawAmt,
+      payoutMethod: (withdrawal_method || 'UPI').toUpperCase(),
+      payoutDetails: {
+        upiId: upi_id || '',
+        accountNumber: account_number || '',
+        ifscCode: ifsc_code || ''
+      },
       status: 'PENDING_APPROVAL'
     });
 
     return NextResponse.json({
-      status: true,
-      message: 'Withdrawal request submitted for processing',
+      success: true,
+      message: 'Withdrawal request submitted successfully and is pending approval.',
       data: {
-        withdrawalId: withdrawal._id,
-        amountRs,
-        status: withdrawal.status
+        transaction_id: withdrawal.requestId,
+        amount: withdrawAmt,
+        remaining_winning_balance: wallet.winningBalance,
+        status: 'PROCESSING',
+        estimated_time: '24-48 hours'
       }
-    });
+    }, { status: 200 });
+
   } catch (error) {
-    return NextResponse.json({ status: false, message: error.message }, { status: 500 });
+    if (error.code === 'INSUFFICIENT_BALANCE') {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'INSUFFICIENT_BALANCE',
+          message: error.message,
+          available_balance: error.availableBalance,
+          required_amount: error.requiredAmount
+        }
+      }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message }
+    }, { status: 500 });
   }
 }

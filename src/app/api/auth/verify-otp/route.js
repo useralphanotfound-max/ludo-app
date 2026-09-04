@@ -1,58 +1,89 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { connectDB } from '@/lib/db';
-import mongoose from 'mongoose';
 import { User } from '@/lib/models/User';
-import { Wallet } from '@/lib/models/Wallet';
+import { GameSettings } from '@/lib/models/GameSettings';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
 
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { otpSessionId, otp } = body;
+    const { mobile, phone, otp, otp_token, otpToken } = body;
 
-    if (!otpSessionId || !otp) {
-      return NextResponse.json({ status: false, message: 'OTP session ID and 4-digit OTP required' }, { status: 400 });
+    const targetMobile = (mobile || phone || '').toString().trim();
+    const enteredOtp = (otp || '').toString().trim();
+    const token = otp_token || otpToken;
+
+    if (!enteredOtp || enteredOtp.length !== 4) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'INVALID_OTP', message: 'Please enter a valid 4-digit OTP' }
+      }, { status: 400 });
     }
 
-    if (otp !== '1234' && otp !== '9999') {
-      return NextResponse.json({ status: false, message: 'Invalid OTP code entered', errorCode: 'OTP_INVALID' }, { status: 422 });
+    let decoded = null;
+    if (token) {
+      try {
+        decoded = jwt.verify(token, JWT_SECRET);
+      } catch (err) {
+        return NextResponse.json({
+          success: false,
+          error: { code: 'OTP_EXPIRED', message: 'OTP token has expired. Please request a new OTP.' }
+        }, { status: 400 });
+      }
     }
 
-    const userId = otpSessionId.replace('session_', '');
-    let user;
-    if (mongoose.isValidObjectId(userId)) {
-      user = await User.findById(userId);
+    let settings = await GameSettings.findOne({ key: 'global_settings' });
+    if (!settings) {
+      settings = await GameSettings.create({ key: 'global_settings' });
+    }
+
+    // OTP verification check
+    if (settings.useDefaultOtp) {
+      if (enteredOtp !== settings.defaultOtpCode && enteredOtp !== '1234') {
+        return NextResponse.json({
+          success: false,
+          error: { code: 'INVALID_OTP', message: `Incorrect OTP. Default OTP is ${settings.defaultOtpCode}` }
+        }, { status: 400 });
+      }
+    }
+
+    let user = null;
+    if (decoded && decoded.userId) {
+      user = await User.findById(decoded.userId);
+    } else if (targetMobile) {
+      user = await User.findOne({ mobile: targetMobile });
     }
 
     if (!user) {
-      return NextResponse.json({ status: false, message: 'Verification session not found or expired' }, { status: 404 });
+      return NextResponse.json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', message: 'User registration session not found' }
+      }, { status: 404 });
     }
 
-    user.status = 'ACTIVE';
-    await user.save();
-
-    const token = jwt.sign(
-      { id: user?._id || 'demo', role: 'USER', username: user?.username || 'user' },
-      process.env.JWT_SECRET || 'royalludosecretkey123_superadmin_auth_9988',
-      { expiresIn: '30d' }
+    const regToken = jwt.sign(
+      { userId: user._id, mobile: user.mobile, action: 'COMPLETE_PROFILE' },
+      JWT_SECRET,
+      { expiresIn: '30m' }
     );
 
     return NextResponse.json({
-      status: true,
-      message: 'Account verified successfully',
+      success: true,
+      message: 'OTP verified successfully. Please setup your profile username and avatar.',
       data: {
-        accessToken: token,
-        refreshToken: token,
-        expiresIn: 2592000,
-        user: {
-          id: user?._id,
-          username: user?.username,
-          mobile: user?.mobile
-        }
+        is_profile_pending: true,
+        registration_token: regToken,
+        user_id: user._id
       }
-    });
+    }, { status: 200 });
+
   } catch (error) {
-    return NextResponse.json({ status: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message }
+    }, { status: 500 });
   }
 }

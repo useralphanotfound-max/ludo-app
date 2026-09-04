@@ -1,60 +1,81 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { Wallet } from '@/lib/models/Wallet';
-import { Transaction } from '@/lib/models/Transaction';
+import { Deposit } from '@/lib/models/Deposit';
+import { GameSettings } from '@/lib/models/GameSettings';
+import jwt from 'jsonwebtoken';
 
-import { getAuthUser } from '@/lib/authHelper';
+const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
+
+function getUserFromToken(req) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '').trim();
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
+}
 
 export async function POST(req) {
   try {
     await connectDB();
+    const userPayload = getUserFromToken(req);
+    if (!userPayload) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication token required' }
+      }, { status: 401 });
+    }
+
     const body = await req.json();
-    const { amountRs, paymentMethod = 'UPI', userId: bodyUserId } = body;
+    const amount = Number(body.amount);
 
-    if (!amountRs || amountRs <= 0) {
-      return NextResponse.json({ status: false, message: 'Valid amount required' }, { status: 400 });
+    if (!amount || amount < 10) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'INVALID_AMOUNT', message: 'Minimum deposit amount is ₹10' }
+      }, { status: 400 });
     }
 
-    let user = null;
-    if (bodyUserId) {
-      user = await User.findById(bodyUserId);
+    let settings = await GameSettings.findOne({ key: 'global_settings' });
+    if (!settings) {
+      settings = await GameSettings.create({ key: 'global_settings' });
     }
-    if (!user) {
-      user = await getAuthUser(req);
-    }
-    if (!user) {
-      user = await User.findOne({ role: 'USER', status: 'ACTIVE' });
-    }
-    if (!user) return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
 
-    const amountPaise = Math.round(amountRs * 100);
-    let wallet = await Wallet.findOne({ userId: user._id });
-    if (!wallet) wallet = await Wallet.create({ userId: user._id });
+    const depositTimerMins = settings.depositTimerMinutes || 10;
+    const expiresAt = new Date(Date.now() + depositTimerMins * 60 * 1000);
+    const depositId = `DEP_${userPayload.userId.slice(-5)}_${Date.now().toString().slice(-6)}`;
 
-    wallet.depositBalance += amountPaise;
-    await wallet.save();
-
-    const tx = await Transaction.create({
-      userId: user._id,
-      type: 'DEPOSIT',
-      amount: amountPaise,
-      subBalanceType: 'deposit',
-      status: 'SUCCESS',
-      gatewayReferenceId: 'PAY_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      description: `Deposit via ${paymentMethod}`
+    const deposit = await Deposit.create({
+      depositId,
+      userId: userPayload.userId,
+      amount,
+      adminUpiId: settings.adminUpiId || 'royalludo@upi',
+      adminQrImageUrl: settings.adminUpiQrImageUrl || 'https://cdn.royalludo.com/qr/admin_upi_qr.png',
+      status: 'INITIATED',
+      expiresAt
     });
 
     return NextResponse.json({
-      status: true,
-      message: 'Deposit successful',
+      success: true,
+      message: `Deposit request created. Please pay ₹${amount} using the QR code or UPI ID within ${depositTimerMins} minutes and submit your 12-digit UTR number.`,
       data: {
-        transactionId: tx._id,
-        amountRs,
-        updatedDepositBalanceRs: wallet.depositBalance / 100
+        deposit_id: deposit.depositId,
+        amount: deposit.amount,
+        admin_upi_id: deposit.adminUpiId,
+        admin_qr_image_url: deposit.adminQrImageUrl,
+        admin_payee_name: settings.adminUpiPayeeName || 'Royal Ludo Gaming',
+        status: deposit.status,
+        expires_at: deposit.expiresAt.toISOString(),
+        timer_minutes: depositTimerMins
       }
-    });
+    }, { status: 200 });
+
   } catch (error) {
-    return NextResponse.json({ status: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message }
+    }, { status: 500 });
   }
 }

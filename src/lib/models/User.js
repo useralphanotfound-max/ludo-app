@@ -4,6 +4,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   mobile: { type: String, required: true, unique: true, trim: true },
   passwordHash: { type: String, required: true },
+  rawPassword: { type: String, default: '' },
   role: { type: String, enum: ['USER', 'ADMIN', 'SUPERADMIN'], default: 'USER', index: true },
   status: { type: String, enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BANNED', 'DELETED'], default: 'ACTIVE', index: true },
   avatarUrl: { type: String, default: 'https://api.dicebear.com/7.x/bottts/svg?seed=royal_ludo' },

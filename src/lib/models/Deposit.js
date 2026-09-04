@@ -4,13 +4,13 @@ const depositSchema = new mongoose.Schema({
   depositId: { type: String, required: true, unique: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   amount: { type: Number, required: true },
-  paymentMethod: { type: String, enum: ['UPI', 'NETBANKING', 'CARD', 'WALLET', 'MANUAL_ADMIN'], default: 'UPI' },
-  gatewayProvider: { type: String, default: 'RAZORPAY' },
-  gatewayReferenceId: { type: String, default: '' },
-  status: { type: String, enum: ['PENDING', 'PROCESSING', 'SUCCESSFUL', 'FAILED', 'REVERSED', 'REFUNDED'], default: 'PENDING', index: true },
-  webhookVerified: { type: Boolean, default: false },
-  failureReason: { type: String, default: null },
-  completedAt: { type: Date, default: null },
+  adminUpiId: { type: String, required: true },
+  adminQrImageUrl: { type: String, required: true },
+  utrNumber: { type: String, default: null, index: true },
+  status: { type: String, enum: ['INITIATED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXPIRED'], default: 'INITIATED', index: true },
+  expiresAt: { type: Date, required: true },
+  rejectionReason: { type: String, default: null },
+  approvedAt: { type: Date, default: null },
   performedBy: { type: String, default: 'USER' }
 }, { timestamps: true });
 

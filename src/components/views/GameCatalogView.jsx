@@ -1,7 +1,5 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { Gamepad2, Search, RefreshCw, Trophy, Users, AlertTriangle, Clock, CheckCircle, Activity, CircleSlash } from 'lucide-react';
+import { Gamepad2, Search, RefreshCw, Trophy, Users, AlertTriangle, Clock, CheckCircle, Activity, CircleSlash, Eye, X } from 'lucide-react';
 import { apiFetch } from '@/services/api';
 import { ModuleConsoleShell, AccessDeniedState } from '@/components/common/ModuleConsoleShell';
 import { hasPermission } from '@/lib/rbac';
@@ -14,6 +12,7 @@ export default function GameCatalogView({ permissions = {} }) {
   const [matches, setMatches] = useState([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [selectedMatch, setSelectedMatch] = useState(null);
 
   useEffect(() => {
     fetchMatches();
@@ -99,7 +98,7 @@ export default function GameCatalogView({ permissions = {} }) {
               <th style={{ padding: '1rem' }}>Entry Fee</th>
               <th style={{ padding: '1rem' }}>Prize Pool</th>
               <th style={{ padding: '1rem' }}>Status</th>
-              <th style={{ padding: '1rem' }}>Winner</th>
+              <th style={{ padding: '1rem' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -122,16 +121,16 @@ export default function GameCatalogView({ permissions = {} }) {
                     {m.gameCode || `Match #${4890 + idx}`}
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 700, color: '#60a5fa' }}>
-                    {m.creator || 'kingplayer'}
+                    {m.creator || m.player1 || 'kingplayer'}
                   </td>
                   <td style={{ padding: '1rem', color: '#cbd5e1' }}>
-                    {m.opponent || 'ludomaster'}
+                    {m.opponent || m.player2 || 'ludomaster'}
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 800, color: '#ffffff' }}>
-                    ₹{m.entryFeeRs || 500}
+                    ₹{m.entryFeeRs || m.entryFee || 500}
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 900, color: '#34d399' }}>
-                    ₹{m.prizePoolRs || 900}
+                    ₹{m.prizePoolRs || m.prizePool || 900}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{
@@ -139,14 +138,31 @@ export default function GameCatalogView({ permissions = {} }) {
                       borderRadius: '9999px',
                       fontSize: '0.7rem',
                       fontWeight: 800,
-                      backgroundColor: m.status === 'Completed' ? 'rgba(16, 185, 129, 0.2)' : m.status === 'Playing' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(251, 191, 36, 0.2)',
-                      color: m.status === 'Completed' ? '#34d399' : m.status === 'Playing' ? '#60a5fa' : '#facc15'
+                      backgroundColor: m.status === 'Completed' || m.status === 'COMPLETED' ? 'rgba(16, 185, 129, 0.2)' : m.status === 'Playing' || m.status === 'PLAYING' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                      color: m.status === 'Completed' || m.status === 'COMPLETED' ? '#34d399' : m.status === 'Playing' || m.status === 'PLAYING' ? '#60a5fa' : '#facc15'
                     }}>
                       {m.status}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 800, color: '#34d399' }}>
-                    {m.winner || 'N/A'}
+                  <td style={{ padding: '1rem' }}>
+                    <button
+                      onClick={() => setSelectedMatch(m)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        color: '#10b981',
+                        fontWeight: 800,
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                    >
+                      <Eye size={14} /> View Data
+                    </button>
                   </td>
                 </tr>
               ))
@@ -154,6 +170,96 @@ export default function GameCatalogView({ permissions = {} }) {
           </tbody>
         </table>
       </div>
+
+      {/* Game View Data Modal */}
+      {selectedMatch && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.5rem'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '600px',
+            backgroundColor: '#0f172a',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '20px',
+            padding: '1.75rem',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ padding: '0.6rem', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                  <Gamepad2 size={22} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>
+                    Game Data — {selectedMatch.gameCode || selectedMatch.id || 'Match #471478'}
+                  </h2>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    Created: {new Date(selectedMatch.createdAt || Date.now()).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedMatch(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', backgroundColor: '#1e293b', padding: '1rem', borderRadius: '12px' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Status</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>{selectedMatch.status}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Entry Fee</div>
+                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>₹{selectedMatch.entryFeeRs || selectedMatch.entryFee || 100}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Prize Pool</div>
+                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#34d399', marginTop: '2px' }}>₹{selectedMatch.prizePoolRs || selectedMatch.prizePool || 180}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.85rem', borderRadius: '10px' }}>
+                <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 800 }}>Creator / Player 1</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>{selectedMatch.creator || selectedMatch.player1 || 'kingplayer'}</div>
+              </div>
+              <div style={{ backgroundColor: 'rgba(244, 63, 94, 0.08)', padding: '0.85rem', borderRadius: '10px' }}>
+                <div style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 800 }}>Opponent / Player 2</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>{selectedMatch.opponent || selectedMatch.player2 || 'ludomaster'}</div>
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: '#1e293b', padding: '1rem', borderRadius: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Game Mode:</span>
+                <span style={{ color: '#ffffff', fontWeight: 800 }}>{selectedMatch.gameMode || 'CLASSIC (2 Players)'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Winner:</span>
+                <span style={{ color: '#34d399', fontWeight: 800 }}>{selectedMatch.winner || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setSelectedMatch(null)} style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', backgroundColor: '#10b981', color: '#000000', fontWeight: 900, border: 'none', cursor: 'pointer' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -294,3 +294,51 @@ button, a, select, input {
 .dice-pip-green { background-color: var(--emerald-light); box-shadow: 0 0 8px var(--emerald-light); }
 .dice-pip-yellow { background-color: var(--gold); box-shadow: 0 0 8px var(--gold); }
 .dice-pip-blue { background-color: var(--blue); box-shadow: 0 0 8px var(--blue); }
+
+/* Responsive Mobile & Tablet Navigation Rules */
+@media (min-width: 1025px) {
+  .mobile-toggle-btn {
+    display: none !important;
+  }
+  .desktop-collapse-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mobile-toggle-btn {
+    display: flex !important;
+  }
+  .desktop-collapse-btn {
+    display: none !important;
+  }
+
+  .sidebar-aside {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    z-index: 9999 !important;
+    transform: translateX(-100%) !important;
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.85) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .sidebar-aside.mobile-open {
+    transform: translateX(0) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  div[style*="gridTemplateColumns: '2fr 1fr'"],
+  div[style*="gridTemplateColumns: 2fr 1fr"],
+  div[style*="gridTemplateColumns: repeat(2, 1fr)"],
+  div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  main {
+    padding: 1rem 0.75rem !important;
+  }
+}
