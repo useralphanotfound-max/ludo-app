@@ -4,12 +4,20 @@ import { User } from '@/lib/models/User';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 import { getClientIp } from '@/lib/ipHelper';
 
+import mongoose from 'mongoose';
+
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(req, { params }) {
+export async function POST(req, { params }) {
   try {
     await connectDB();
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams.id;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ status: false, message: 'Invalid User ID' }, { status: 400 });
+    }
+
     const body = await req.json();
     const { status, reason } = body;
     const clientIp = getClientIp(req);
@@ -38,3 +46,5 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }
 }
+
+export const PATCH = POST;

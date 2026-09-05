@@ -19,8 +19,13 @@ const gameSettingsSchema = new mongoose.Schema({
   referralBonusRs: { type: Number, default: 50 },
   maintenanceMode: { type: Boolean, default: false },
   maintenanceMessage: { type: String, default: 'Royal Ludo is undergoing scheduled maintenance. Back soon!' },
+  isWebGameEnabled: { type: Boolean, default: true },
   forceUpdateVersion: { type: String, default: '1.0.0' },
   ludoKingAppUrl: { type: String, default: 'ludoking://play' }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
-export const GameSettings = mongoose.models.GameSettings || mongoose.model('GameSettings', gameSettingsSchema);
+if (mongoose.models.GameSettings) {
+  delete mongoose.models.GameSettings;
+}
+
+export const GameSettings = mongoose.model('GameSettings', gameSettingsSchema);

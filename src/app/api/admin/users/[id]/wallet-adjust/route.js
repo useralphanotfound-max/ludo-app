@@ -5,10 +5,18 @@ import { Wallet } from '@/lib/models/Wallet';
 import { Transaction } from '@/lib/models/Transaction';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 
+import mongoose from 'mongoose';
+
 export async function POST(req, { params }) {
   try {
     await connectDB();
-    const userId = params.id;
+    const resolvedParams = await Promise.resolve(params);
+    const userId = resolvedParams.id;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ status: false, message: 'Invalid User ID' }, { status: 400 });
+    }
+
     const body = await req.json();
     const { actionType, subBalanceType, amountRs, reason, adminUsername, adminId } = body;
 

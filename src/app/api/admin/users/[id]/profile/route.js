@@ -8,6 +8,8 @@ import { WithdrawalRequest } from '@/lib/models/WithdrawalRequest';
 import { LoginHistory } from '@/lib/models/LoginHistory';
 import { SecurityAlert } from '@/lib/models/SecurityAlert';
 
+import mongoose from 'mongoose';
+
 export const dynamic = 'force-dynamic';
 
 function maskPhoneNumber(phone) {
@@ -20,7 +22,12 @@ function maskPhoneNumber(phone) {
 export async function GET(req, { params }) {
   try {
     await connectDB();
-    const userId = params.id;
+    const resolvedParams = await Promise.resolve(params);
+    const userId = resolvedParams.id;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ status: false, message: 'Invalid User ID' }, { status: 400 });
+    }
 
     const user = await User.findById(userId).lean();
     if (!user) {

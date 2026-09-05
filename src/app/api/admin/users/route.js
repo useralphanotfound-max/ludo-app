@@ -23,22 +23,41 @@ export async function GET(req) {
 
     const formattedUsers = users.map(u => {
       const w = walletMap.get(u._id.toString());
+      const totalWallet = w ? w.depositBalance + w.winningBalance + w.bonusBalance : 0;
+      const mob = u.mobile || '';
+      const maskedMobile = mob.length >= 10 ? `${mob.slice(0, 3)}****${mob.slice(-3)}` : mob;
+
       return {
         id: u._id.toString(),
-        username: u.username,
-        mobile: u.mobile,
-        raw_password: u.rawPassword || 'N/A', // Superadmin raw password visibility
-        role: u.role,
-        status: u.status,
-        avatar_url: u.avatarUrl,
+        username: u.username || 'Unset Profile',
+        mobile: mob,
+        maskedMobile,
+        raw_password: u.rawPassword || 'N/A',
+        rawPassword: u.rawPassword || 'N/A',
+        role: u.role || 'USER',
+        status: u.status || 'ACTIVE',
+        kycStatus: u.kycStatus || 'NONE',
+        avatar_url: u.avatarUrl || 'https://cdn.royalludo.com/avatars/av1.png',
         referral_code: u.referralCode,
         referred_by: u.referredBy,
         level: u.level || 1,
-        balance: w ? w.depositBalance + w.winningBalance + w.bonusBalance : 0,
-        deposit_balance: w ? w.depositBalance : 0,
-        winning_balance: w ? w.winningBalance : 0,
-        bonus_balance: w ? w.bonusBalance : 0,
-        created_at: u.createdAt
+        wallet: {
+          totalBalanceRs: totalWallet,
+          depositBalance: w ? w.depositBalance : 0,
+          winningBalance: w ? w.winningBalance : 0,
+          bonusBalance: w ? w.bonusBalance : 0
+        },
+        financials: {
+          totalDepositsRs: 0,
+          totalWithdrawalsRs: 0
+        },
+        stats: {
+          won: 0,
+          lost: 0
+        },
+        riskScore: u.riskScore || 'LOW',
+        created_at: u.createdAt,
+        createdAt: u.createdAt
       };
     });
 
@@ -49,6 +68,9 @@ export async function GET(req) {
       data: {
         users: formattedUsers,
         pagination: {
+          page,
+          totalPages,
+          total: totalCount,
           current_page: page,
           total_pages: totalPages,
           total_count: totalCount

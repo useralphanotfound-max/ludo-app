@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
+import { Wallet } from '@/lib/models/Wallet';
 import { GameSettings } from '@/lib/models/GameSettings';
+
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
@@ -64,6 +66,36 @@ export async function POST(req) {
       }, { status: 404 });
     }
 
+    user.status = 'ACTIVE';
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    // Ensure Wallet document exists in MongoDB for this user
+    let wallet = await Wallet.findOne({ userId: user._id });
+    if (!wallet) {
+      wallet = await Wallet.create({
+        userId: user._id,
+        depositBalance: 0,
+        winningBalance: 0,
+        bonusBalance: 0
+      });
+    }
+
+    const isNewUser = !user.username || user.username.startsWith('user_');
+
+
+    const accessToken = jwt.sign(
+      { userId: user._id, role: user.role || 'USER' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: user._id, role: user.role || 'USER' },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
     const regToken = jwt.sign(
       { userId: user._id, mobile: user.mobile, action: 'COMPLETE_PROFILE' },
       JWT_SECRET,
@@ -72,11 +104,22 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      message: 'OTP verified successfully. Please setup your profile username and avatar.',
+      message: 'Login successful',
       data: {
-        is_profile_pending: true,
-        registration_token: regToken,
-        user_id: user._id
+        is_new_user: isNewUser,
+        is_profile_pending: isNewUser,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        registration_token: isNewUser ? regToken : null,
+        expires_in: 86400,
+        user: {
+          id: user._id,
+          phone: user.mobile,
+          username: user.username,
+          avatar_url: user.avatarUrl || 'https://cdn.royalludo.com/avatars/av1.png',
+          level: user.level || 1,
+          created_at: user.createdAt
+        }
       }
     }, { status: 200 });
 
@@ -87,3 +130,4 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+

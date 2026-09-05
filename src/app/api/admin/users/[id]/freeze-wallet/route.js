@@ -3,12 +3,17 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
 
+import mongoose from 'mongoose';
+
 export async function POST(req, { params }) {
   try {
     await connectDB();
-    const userId = params.id;
-    const body = await req.json();
-    const { freeze, reason, adminUsername, adminId } = body;
+    const resolvedParams = await Promise.resolve(params);
+    const userId = resolvedParams.id;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ status: false, message: 'Invalid User ID' }, { status: 400 });
+    }
 
     const user = await User.findById(userId);
     if (!user) {

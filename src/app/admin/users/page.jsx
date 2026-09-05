@@ -46,9 +46,11 @@ export default function UserOperationsPage() {
         limit: '20'
       });
       const res = await apiFetch(`/admin/users?${query.toString()}`);
-      if (res.status && res.data) {
-        setUsers(res.data);
-        if (res.pagination) setPagination(res.pagination);
+      if (res && (res.success || res.status) && res.data) {
+        const userList = Array.isArray(res.data) ? res.data : (res.data.users || []);
+        setUsers(userList);
+        const pag = res.data.pagination || res.pagination;
+        if (pag) setPagination(pag);
         if (res.summaryStats) setSummaryStats(res.summaryStats);
       }
     } catch (e) {

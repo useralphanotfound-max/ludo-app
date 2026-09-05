@@ -12,6 +12,9 @@ const roomSchema = new mongoose.Schema({
   isPrivate: { type: Boolean, default: false },
   status: { type: String, enum: ['WAITING', 'MATCHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'EXPIRED'], default: 'WAITING', index: true },
   joinedPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  isCodeShared: { type: Boolean, default: false },
+  hostStarted: { type: Boolean, default: false },
+  opponentStarted: { type: Boolean, default: false },
   expiresAt: { type: Date, required: true },
   refundedAt: { type: Date, default: null }
 }, { timestamps: true });
@@ -19,3 +22,4 @@ const roomSchema = new mongoose.Schema({
 roomSchema.index({ createdAt: -1 });
 
 export const Room = mongoose.models.Room || mongoose.model('Room', roomSchema);
+

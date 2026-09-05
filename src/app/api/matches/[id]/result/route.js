@@ -125,6 +125,7 @@ export async function POST(req, { params }) {
       }
     }, { status: 200 });
 
+
   } catch (error) {
     return NextResponse.json({
       success: false,
@@ -132,3 +133,55 @@ export async function POST(req, { params }) {
     }, { status: 500 });
   }
 }
+
+export async function GET(req, { params }) {
+  try {
+    await connectDB();
+    const userPayload = getUserFromToken(req);
+    if (!userPayload) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication token required' }
+      }, { status: 401 });
+    }
+
+    const { id } = params;
+
+    const match = await Match.findOne({
+      $or: [{ _id: id }, { roomId: id }, { roomCode: id }]
+    });
+
+    if (!match) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'MATCH_NOT_FOUND', message: 'Match result not found' }
+      }, { status: 404 });
+    }
+
+    const currentUserId = userPayload.userId || userPayload.id;
+    const isWinner = match.winnerId?.toString() === currentUserId;
+    const resultSubmission = match.results?.find(r => r.userId?.toString() === currentUserId);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        match_id: match.matchId || match._id,
+        room_id: match.roomId,
+        result_id: resultSubmission?._id || `res_${match._id.toString().slice(-6)}`,
+        is_winner: isWinner,
+        prize_amount: isWinner ? match.prizePool : 0,
+        status: match.status === 'COMPLETED' ? 'VERIFIED' : match.status,
+        screenshot_url: resultSubmission?.screenshotUrl || null,
+        verified_at: match.resolvedAt || match.updatedAt,
+        new_balance: null
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message }
+    }, { status: 500 });
+  }
+}
+

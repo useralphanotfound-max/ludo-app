@@ -1,0 +1,991 @@
+{
+	"info": {
+		"_postman_id": "f8a92b3a-4e2b-4781-8b29-royalludo-mobile-api",
+		"name": "Royal Ludo — Complete Mobile App API Collection",
+		"description": "Comprehensive Postman collection for Royal Ludo Mobile Web Application APIs. Includes Authentication, Profile, Wallet Deposits & Cashouts, Room Lifecycle (Create/Join/Share/404 Refund), Matches, Tasks, Scratch Cards, Referrals, and Support Tickets.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://royalludo-nine.vercel.app",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "otp_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "room_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "match_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "task_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scratch_card_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Send OTP (with Password)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\",\n  \"country_code\": \"+91\",\n  \"password\": \"Password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/send-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"send-otp"
+							]
+						},
+						"description": "Generates a 4-digit OTP for testing ('1234') and returns an OTP Token required for verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP & Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"1234\",\n  \"otp_token\": \"{{otp_token}}\",\n  \"password\": \"Password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify-otp"
+							]
+						},
+						"description": "Verifies 4-digit OTP code ('1234'), initializes user profile & wallet in MongoDB, and returns JWT access_token & refresh_token."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/resend-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"resend-otp"
+							]
+						},
+						"description": "Resends 4-digit verification OTP code to the requested mobile number."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Access Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Refreshes an expired JWT access token using a valid refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "User Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Invalidates active session token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. User & Profile",
+			"item": [
+				{
+					"name": "Get Current User Profile (Me)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						},
+						"description": "Fetches current logged-in user profile, mobile, avatar, level, and stats."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile (Username & Avatar)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"KingPlayer_99\",\n  \"avatar_id\": \"av1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						},
+						"description": "Updates player username and avatar ID in MongoDB."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Avatars List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/avatars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"avatars"
+							]
+						},
+						"description": "Returns list of selectable profile avatars."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Wallet & Payments",
+			"item": [
+				{
+					"name": "Get Wallet Balance Breakdown",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/balance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"balance"
+							]
+						},
+						"description": "Retrieves user's total balance, deposit balance, winning balance, and bonus balance."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Deposit UTR / Transaction ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"utr_number\": \"UTR9876543210\",\n  \"amount\": 500\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/deposit/confirm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"deposit",
+								"confirm"
+							]
+						},
+						"description": "Submits user's UTR Transaction ID for deposit confirmation and auto-credits the deposit balance."
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Payout Withdrawal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 200,\n  \"payout_method\": \"UPI\",\n  \"upi_id\": \"user@upi\",\n  \"account_number\": \"\",\n  \"ifsc_code\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/withdraw/initiate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"withdraw",
+								"initiate"
+							]
+						},
+						"description": "Debits winning balance and creates a withdrawal request for admin approval/auto-payout."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet Transaction History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/transactions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"transactions"
+							]
+						},
+						"description": "Gets past deposit, withdrawal, entry fee, and prize payout transactions."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Rooms (1vs1 Classic Mode)",
+			"item": [
+				{
+					"name": "Create Room (Host 1vs1 Match)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entry_fee\": 100,\n  \"mode\": \"CLASSIC\",\n  \"max_players\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"create"
+							]
+						},
+						"description": "Creates a 2-player Classic room. Debits host wallet balance and starts 45-second opponent waiting timer."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Hosted Room Status (Auto 45s Refund)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/my-room",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"my-room"
+							]
+						},
+						"description": "Checks current host room. Auto-cancels and refunds host wallet if no opponent joins within 45 seconds."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Open Rooms to Join",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/available",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"available"
+							]
+						},
+						"description": "Lists all active 1vs1 open rooms created by other players waiting for opponents."
+					},
+					"response": []
+				},
+				{
+					"name": "Join Room (Opponent)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/join",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}",
+								"join"
+							]
+						},
+						"description": "Opponent joins room. Debits opponent wallet balance and updates room state to MATCHED."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Room Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{room_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}"
+							]
+						},
+						"description": "Fetches specific room details, room code, and connected players."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Room & Refund Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancels open room and refunds host entry fee back to wallet."
+					},
+					"response": []
+				},
+				{
+					"name": "Share Code / Link to Opponent",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/share-link",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"rooms",
+								"{{room_id}}",
+								"share-link"
+							]
+						},
+						"description": "Reveals private Ludo King room code to opponent after host clicks Share Code."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Matches & Results",
+			"item": [
+				{
+					"name": "Get Match Result & Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches/{{match_id}}/result",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"matches",
+								"{{match_id}}",
+								"result"
+							]
+						},
+						"description": "Retrieves match outcome status, winner details, and dispute status."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Match Result Claim",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"match_outcome\": \"WIN\",\n  \"winner_id\": \"{{user_id}}\",\n  \"comment\": \"Won game by clearing all tokens\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/matches/{{match_id}}/result",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"matches",
+								"{{match_id}}",
+								"result"
+							]
+						},
+						"description": "Player submits match result claim (WIN / LOSS / CANCEL)."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Match Screenshot Proof",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"screenshot_url\": \"https://cdn.royalludo.com/proofs/match_win_proof.png\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/matches/{{match_id}}/upload-screenshot",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"matches",
+								"{{match_id}}",
+								"upload-screenshot"
+							]
+						},
+						"description": "Uploads match victory screenshot proof for automated winner verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Player Match History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches/history",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"matches",
+								"history"
+							]
+						},
+						"description": "Lists player's past played matches, entry fees, winnings, and W/L statistics."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Tasks & Rewards",
+			"item": [
+				{
+					"name": "Get Daily Tasks List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks"
+							]
+						},
+						"description": "Returns list of daily play tasks, streak rewards, and claim statuses."
+					},
+					"response": []
+				},
+				{
+					"name": "Claim Task Reward",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{task_id}}/claim",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{task_id}}",
+								"claim"
+							]
+						},
+						"description": "Claims task reward bonus coins into player wallet."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Scratch Cards",
+			"item": [
+				{
+					"name": "Get Available Scratch Cards",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/scratch-cards",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scratch-cards"
+							]
+						},
+						"description": "Gets player's unlocked mystery bonus scratch cards."
+					},
+					"response": []
+				},
+				{
+					"name": "Scratch Mystery Card",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/scratch-cards/{{scratch_card_id}}/scratch",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scratch-cards",
+								"{{scratch_card_id}}",
+								"scratch"
+							]
+						},
+						"description": "Scratches card to reveal prize money and auto-credits bonus balance."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "8. Referrals",
+			"item": [
+				{
+					"name": "Get Referral Details & Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/referral/info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"referral",
+								"info"
+							]
+						},
+						"description": "Fetches player's unique referral code, total invited friends, and earned bonus cash."
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Friend Referral Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"referral_code\": \"ROYAL9876\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/referral/apply",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"referral",
+								"apply"
+							]
+						},
+						"description": "Applies friend's referral code to claim sign-up referral cash."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "9. Support & Disputes",
+			"item": [
+				{
+					"name": "Get Support Contact Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support/contact",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"contact"
+							]
+						},
+						"description": "Fetches customer support WhatsApp number and Telegram handle."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Support Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"Deposit UTR pending\",\n  \"message\": \"I transferred ₹500 via UPI UTR 9876543210. Please credit my wallet.\",\n  \"category\": \"PAYMENT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/support/ticket",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"ticket"
+							]
+						},
+						"description": "Submits a customer support ticket for admin assistance."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "10. System Web Status",
+			"item": [
+				{
+					"name": "Get Web Status (Game Visibility)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/web-status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"web-status"
+							]
+						},
+						"description": "Public status API used by web clients to check if the web game is enabled or disabled (404)."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
