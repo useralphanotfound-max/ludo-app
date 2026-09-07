@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "royal-ludo-mobile-api-v2026",
     "name": "Royal Ludo — Complete Mobile App API Collection",
-    "description": "Complete Postman API collection for Royal Ludo Web Mobile Application. Features auto-token extraction script on login/verify-otp, auto-populating Authorization Bearer token header across all requests, full request bodies, query params, FormData image uploads, and realistic JSON responses.",
+    "description": "Complete Postman API collection for Royal Ludo Web Mobile Application. Features auto-token extraction script on login/verify-otp, auto-populating Authorization Bearer token header across all requests, full request bodies, query params, and realistic JSON responses.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -55,7 +55,7 @@
   "item": [
     {
       "name": "1. Authentication",
-      "description": "APIs for Mobile Login, Registration with OTP (default 1234), optional Referral Code, and Token Refresh. Auto-saves access_token.",
+      "description": "APIs for Mobile Login, Registration with OTP (default 1234), and Token Refresh. Auto-saves access_token.",
       "item": [
         {
           "name": "Direct Password Login (Auto-Saves Bearer Token)",
@@ -111,7 +111,7 @@
           ]
         },
         {
-          "name": "Send OTP (Registration + Optional Referral Code)",
+          "name": "Send OTP (Registration)",
           "event": [
             {
               "listen": "test",
@@ -150,7 +150,7 @@
                 "send-otp"
               ]
             },
-            "description": "Generates 4-digit OTP ('1234') for registration and returns otp_token. Accepts phone, password, verify_password, and optional referral_code."
+            "description": "Generates 4-digit OTP ('1234') for registration and returns otp_token."
           },
           "response": [
             {
@@ -431,19 +431,17 @@
                 {
                   "key": "amount",
                   "value": "500",
-                  "type": "text",
-                  "description": "Deposit amount in INR (e.g. 500)"
+                  "type": "text"
                 },
                 {
                   "key": "utr_number",
                   "value": "123456676655554",
-                  "type": "text",
-                  "description": "12-digit UTR or Transaction Ref ID"
+                  "type": "text"
                 },
                 {
                   "key": "proof_image",
                   "type": "file",
-                  "description": "Payment screenshot image file (Choose File)"
+                  "description": "Select screenshot file (choose file)"
                 }
               ]
             },
@@ -467,7 +465,7 @@
               "status": "Created",
               "code": 201,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"success\": true,\n  \"message\": \"Deposit request submitted successfully. Pending admin approval.\",\n  \"data\": {\n    \"deposit_id\": \"DEP_bb0bb_261307\",\n    \"amount\": 500,\n    \"utr_number\": \"123456676655554\",\n    \"proof_image_url\": \"data:image/png;base64,sample...\",\n    \"status\": \"PENDING_APPROVAL\",\n    \"created_at\": \"2026-09-07T16:24:21.312Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Deposit request submitted successfully. Pending admin approval.\",\n  \"data\": {\n    \"deposit_id\": \"DEP_bb0bb_261307\",\n    \"amount\": 500,\n    \"utr_number\": \"123456676655554\",\n    \"proof_image_url\": \"data:image/png;base64,...\",\n    \"status\": \"PENDING_APPROVAL\",\n    \"created_at\": \"2026-09-07T16:24:21.312Z\"\n  }\n}"
             }
           ]
         },
@@ -600,7 +598,7 @@
                 "create"
               ]
             },
-            "description": "Creates a new Ludo room (Minimum entry fee ₹10). Deducts entry fee from creator wallet."
+            "description": "Creates a new Ludo room. Deducts entry fee from creator's wallet. Automatically sets `room_id` and `room_code` variables."
           },
           "response": [
             {
@@ -627,7 +625,7 @@
                 "available"
               ]
             },
-            "description": "Fetches non-expired public waiting rooms. Runs backend auto-expiration & auto-refund engine."
+            "description": "Fetches non-expired public waiting rooms. Also runs backend auto-expiration engine."
           },
           "response": [
             {
@@ -765,19 +763,17 @@
                 {
                   "key": "matchId",
                   "value": "{{match_id}}",
-                  "type": "text",
-                  "description": "Match ID"
+                  "type": "text"
                 },
                 {
                   "key": "claimedResult",
                   "value": "WON",
-                  "type": "text",
-                  "description": "WON or LOST"
+                  "type": "text"
                 },
                 {
                   "key": "screenshot",
                   "type": "file",
-                  "description": "Winning board screenshot image file (Choose File)"
+                  "description": "Select winning board screenshot file (choose file)"
                 }
               ]
             },
@@ -964,7 +960,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"referral_code\": \"MANISH9729\",\n    \"share_link\": \"https://royalludo.com/refer/MANISH9729\",\n    \"bonus_per_referral\": 50,\n    \"total_referrals\": 0,\n    \"total_earned\": 0,\n    \"referred_users\": []\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"referral_code\": \"MANISH9729\",\n    \"total_referrals\": 0,\n    \"earnings\": 0\n  }\n}"
             }
           ]
         }
@@ -1009,7 +1005,7 @@
               "status": "Created",
               "code": 201,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"success\": true,\n  \"message\": \"Your support ticket has been submitted\",\n  \"data\": {\n    \"ticket_id\": \"tkt_00bb_998123\",\n    \"category\": \"payment\",\n    \"subject\": \"Deposit issue\",\n    \"status\": \"OPEN\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ticket created successfully. Reference #TKT_9901\"\n}"
             }
           ]
         },

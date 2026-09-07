@@ -83,6 +83,8 @@ export async function POST(req) {
         winningBalance: 0,
         bonusBalance: 0
       });
+    }
+
     // Process referral bonus if user was referred by a valid referralCode
     if (user.referredBy && !user.isReferralBonusClaimed) {
       try {

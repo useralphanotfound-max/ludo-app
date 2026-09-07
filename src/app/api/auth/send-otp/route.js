@@ -10,12 +10,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-20
 export async function POST(req) {
   try {
     await connectDB();
+    const body = await req.json().catch(() => ({}));
     const { mobile, phone, password, verify_password, verifyPassword, confirm_password, confirmPassword, referral_code, referralCode } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
     const targetPassword = (password || '').toString().trim();
     const targetVerifyPassword = (verify_password || verifyPassword || confirm_password || confirmPassword || '').toString().trim();
-    const targetRefCode = referral_code || referralCode || '';
+    const targetRefCode = (referral_code || referralCode || '').toString().trim().toUpperCase();
 
     if (!targetMobile || targetMobile.length < 10) {
       return NextResponse.json({
@@ -31,11 +32,29 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    if (targetVerifyPassword && targetPassword !== targetVerifyPassword) {
+    if (!targetVerifyPassword) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'VERIFY_PASSWORD_REQUIRED', message: 'Verify password is required' }
+      }, { status: 400 });
+    }
+
+    if (targetPassword !== targetVerifyPassword) {
       return NextResponse.json({
         success: false,
         error: { code: 'PASSWORD_MISMATCH', message: 'Create Password and Verify Password do not match' }
       }, { status: 400 });
+    }
+
+    // Check if referral_code is entered and if it's valid
+    if (targetRefCode) {
+      const referrerUser = await User.findOne({ referralCode: targetRefCode });
+      if (!referrerUser) {
+        return NextResponse.json({
+          success: false,
+          error: { code: 'INVALID_REFERRAL_CODE', message: 'Invalid referral code. Please enter a valid referral code or leave it blank.' }
+        }, { status: 400 });
+      }
     }
 
     // Check if user already exists and is active
