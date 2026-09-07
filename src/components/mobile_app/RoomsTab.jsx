@@ -28,11 +28,11 @@ export default function RoomsTab({
     return fetch(url, { ...options, headers });
   };
 
-  const fetchRoomsData = async () => {
-    setLoading(true);
+  const fetchRoomsData = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       // 1. Fetch My Created Room
-      const myRes = await authFetch('/api/rooms/my-room');
+      const myRes = await authFetch('/api/rooms/my-room?t=' + Date.now());
       const myData = await myRes.json();
       if (myData.success && myData.data) {
         setMyRoom(myData.data);
@@ -41,7 +41,7 @@ export default function RoomsTab({
       }
 
       // 2. Fetch Available Rooms (this also triggers auto-expiration & auto-refunds backend side!)
-      const availRes = await authFetch('/api/rooms/available');
+      const availRes = await authFetch('/api/rooms/available?t=' + Date.now());
       const availData = await availRes.json();
       if (availData.success && availData.data?.rooms) {
         setAvailableRooms(availData.data.rooms);
@@ -49,13 +49,15 @@ export default function RoomsTab({
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRoomsData();
-    const interval = setInterval(fetchRoomsData, 5000); // Poll every 5s for room updates
+    fetchRoomsData(false);
+    const interval = setInterval(() => {
+      fetchRoomsData(true);
+    }, 2000); // Poll every 2s silently for fast room updates
     return () => clearInterval(interval);
   }, []);
 
@@ -255,12 +257,23 @@ export default function RoomsTab({
 
         {/* List of Available Rooms */}
         <div className="space-y-3">
-          {availableRooms.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-xs bg-[#121623]/40 border border-slate-800/50 rounded-2xl">
-              No public rooms available right now. Click the + button below to create one!
-            </div>
-          ) : (
-            availableRooms.map((room) => (
+          {(() => {
+            const otherRooms = availableRooms.filter(room => {
+              const isMyUserId = user && (room.creator?.id === user.id || room.creator?.id === user._id || room.creator?.id?.toString() === user.id?.toString());
+              const isMyUsername = user?.username && room.creator?.username === user.username;
+              const isMyActiveRoom = myRoom && (myRoom.room_id === room.room_id || myRoom.room_code === room.room_code);
+              return !isMyUserId && !isMyUsername && !isMyActiveRoom;
+            });
+
+            if (otherRooms.length === 0) {
+              return (
+                <div className="p-8 text-center text-slate-500 text-xs bg-[#121623]/40 border border-slate-800/50 rounded-2xl">
+                  No public opponent rooms available right now. Click the + button below to create one!
+                </div>
+              );
+            }
+
+            return otherRooms.map((room) => (
               <div
                 key={room.room_id}
                 className="bg-[#121623] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between hover:border-slate-700 transition-all shadow-md"
@@ -309,8 +322,8 @@ export default function RoomsTab({
                   </button>
                 </div>
               </div>
-            ))
-          )}
+            ));
+          })()}
         </div>
       </div>
 

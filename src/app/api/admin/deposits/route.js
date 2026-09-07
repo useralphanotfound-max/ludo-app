@@ -45,26 +45,26 @@ export async function GET(req) {
       Deposit.find(query).populate('userId', 'username mobile avatarUrl').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Deposit.countDocuments(query),
       Deposit.aggregate([
-        { $match: { status: 'SUCCESSFUL' } },
+        { $match: { status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
-      Deposit.countDocuments({ status: 'PENDING' }),
-      Deposit.countDocuments({ status: 'SUCCESSFUL' }),
-      Deposit.countDocuments({ status: 'FAILED' }),
+      Deposit.countDocuments({ status: { $in: ['PENDING_APPROVAL', 'PENDING', 'INITIATED'] } }),
+      Deposit.countDocuments({ status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] } }),
+      Deposit.countDocuments({ status: { $in: ['REJECTED', 'EXPIRED', 'FAILED'] } }),
       Deposit.aggregate([
         { $group: { _id: '$paymentMethod', count: { $sum: 1 } } }
       ]),
       Deposit.aggregate([
-        { $match: { status: 'SUCCESSFUL', createdAt: { $gte: thirtyDaysAgo } } },
+        { $match: { status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] }, createdAt: { $gte: thirtyDaysAgo } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       Deposit.aggregate([
-        { $match: { status: 'SUCCESSFUL', createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        { $match: { status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] }, createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ])
     ]);
 
-    const totalDepositsRs = sumAgg[0] ? Math.round(sumAgg[0].total / 100) : 0;
+    const totalDepositsRs = sumAgg[0] ? Math.round(sumAgg[0].total) : 0;
     const thisVol = thisPeriodAgg[0]?.total || 0;
     const prevVol = prevPeriodAgg[0]?.total || 0;
     let growthPctStr = '+0.0% this month';
@@ -91,16 +91,51 @@ export async function GET(req) {
         mobile: d.userId?.mobile || 'N/A',
         avatarUrl: d.userId?.avatarUrl
       },
-      amountRs: Math.round((d.amount || 0) / 100),
+      amountRs: Math.round(d.amount || 0),
+      utrNumber: d.utrNumber || 'N/A',
+      proofImageUrl: d.proofImageUrl || null,
       paymentMethod: d.paymentMethod || 'UPI',
-      gatewayProvider: d.gatewayProvider || 'RAZORPAY',
-      gatewayReferenceId: d.gatewayReferenceId || 'N/A',
-      status: d.status || 'PENDING',
+      gatewayProvider: d.gatewayProvider || 'MANUAL_UPI',
+      gatewayReferenceId: d.utrNumber || d.depositId || 'N/A',
+      status: d.status || 'PENDING_APPROVAL',
       webhookVerified: d.webhookVerified || false,
-      failureReason: d.failureReason || null,
+      failureReason: d.rejectionReason || null,
       createdAt: d.createdAt,
-      completedAt: d.completedAt
+      completedAt: d.approvedAt || d.updatedAt
     }));
+
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+    const dailyInflowAgg = await Deposit.aggregate([
+      {
+        $match: {
+          status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] },
+          createdAt: { $gte: fourteenDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          totalAmount: { $sum: "$amount" }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const inflowMap = {};
+    dailyInflowAgg.forEach(item => {
+      inflowMap[item._id] = Math.round(item.totalAmount);
+    });
+
+    const depositTrendData = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const dateStr = d.toISOString().split('T')[0];
+      depositTrendData.push({
+        name: `Day ${14 - i}`,
+        date: dateStr,
+        amount: inflowMap[dateStr] || 0
+      });
+    }
 
     return NextResponse.json({
       status: true,
@@ -113,8 +148,9 @@ export async function GET(req) {
         growthTrend: growthPctStr
       },
       methodDonutData: methodDonutData.length > 0 ? methodDonutData : [
-        { name: 'UPI Direct', value: 1, color: '#10b981' }
+        { name: 'UPI Direct Transfer', value: totalCount || 0, color: '#10b981' }
       ],
+      depositTrendData,
       pagination: { total: totalCount, page, limit, totalPages: Math.ceil(totalCount / limit) },
       data: formatted
     });
@@ -123,64 +159,53 @@ export async function GET(req) {
   }
 }
 
-// POST endpoint for manual server-side gateway verification trigger
+// POST endpoint for manual server-side gateway verification / approval trigger
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
     const { depositId, action, adminUsername, adminId } = body;
 
-    const deposit = await Deposit.findById(depositId).populate('userId');
+    const deposit = await Deposit.findOne({ $or: [{ _id: depositId }, { depositId }] }).populate('userId');
     if (!deposit) {
       return NextResponse.json({ status: false, message: 'Deposit record not found' }, { status: 404 });
     }
 
-    if (action === 'VERIFY_GATEWAY') {
-      // Simulate server-to-server gateway verification (Razorpay/Cashfree API check)
-      const simulatedGatewaySuccess = true;
-
-      if (simulatedGatewaySuccess) {
-        deposit.status = 'SUCCESSFUL';
-        deposit.webhookVerified = true;
-        deposit.completedAt = new Date();
-        await deposit.save();
-
-        // Credit user wallet deposit balance if not credited already
-        let wallet = await Wallet.findOne({ userId: deposit.userId._id });
-        if (!wallet) {
-          wallet = await Wallet.create({ userId: deposit.userId._id, depositBalance: 0, winningBalance: 0, bonusBalance: 0 });
-        }
-        wallet.depositBalance += deposit.amount;
-        await wallet.save();
-
-        // Record transaction
-        await Transaction.create({
-          userId: deposit.userId._id,
-          type: 'DEPOSIT',
-          amount: deposit.amount,
-          subBalanceType: 'deposit',
-          status: 'SUCCESS',
-          referenceId: deposit.depositId,
-          gatewayReferenceId: deposit.gatewayReferenceId || `GW-${Date.now()}`,
-          description: `Server-Verified Gateway Deposit of ₹${Math.round(deposit.amount / 100)}`,
-          performedBy: adminUsername || 'SERVER_WEBHOOK'
-        });
-
-        await AdminAuditLog.create({
-          adminId: adminId || null,
-          adminUsername: adminUsername || 'SuperAdmin',
-          action: 'WALLET_MANUAL_ADJUSTMENT',
-          targetEntity: 'Deposit',
-          targetId: deposit._id,
-          details: `Manual server-side verification approved deposit ₹${Math.round(deposit.amount / 100)} for ${deposit.userId.username}`,
-          ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1'
-        });
-
-        return NextResponse.json({
-          status: true,
-          message: `Deposit verified with gateway server and credited ₹${Math.round(deposit.amount / 100)} to user wallet`
-        });
+    if (action === 'VERIFY_GATEWAY' || action === 'RECONCILE' || action === 'APPROVE') {
+      if (deposit.status === 'APPROVED') {
+        return NextResponse.json({ status: false, message: 'Deposit already approved and credited.' }, { status: 400 });
       }
+
+      deposit.status = 'APPROVED';
+      deposit.approvedAt = new Date();
+      await deposit.save();
+
+      // Credit user wallet deposit balance
+      const userObjId = deposit.userId?._id || deposit.userId;
+      let wallet = await Wallet.findOne({ userId: userObjId });
+      if (!wallet) {
+        wallet = await Wallet.create({ userId: userObjId, depositBalance: 0, winningBalance: 0, bonusBalance: 0 });
+      }
+      wallet.depositBalance += deposit.amount;
+      await wallet.save();
+
+      // Record transaction
+      await Transaction.create({
+        userId: userObjId,
+        type: 'DEPOSIT',
+        amount: deposit.amount,
+        subBalanceType: 'deposit',
+        status: 'SUCCESS',
+        referenceId: deposit.depositId,
+        gatewayReferenceId: deposit.utrNumber || `GW-${Date.now()}`,
+        description: `Approved UPI Deposit of ₹${Math.round(deposit.amount)} (UTR: ${deposit.utrNumber || 'MANUAL'})`,
+        performedBy: adminUsername || 'SUPERADMIN'
+      });
+
+      return NextResponse.json({
+        status: true,
+        message: `Deposit of ₹${Math.round(deposit.amount)} approved and credited to user wallet successfully`
+      });
     }
 
     return NextResponse.json({ status: false, message: 'Action processed' });

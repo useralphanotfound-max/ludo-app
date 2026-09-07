@@ -33,10 +33,10 @@ export async function POST(req) {
     const { entry_fee, entryFee, room_code, roomCode, is_private, isPrivate } = body;
 
     const fee = Number(entry_fee || entryFee);
-    if (!fee || fee <= 0) {
+    if (!fee || fee < 10) {
       return NextResponse.json({
         success: false,
-        error: { code: 'BAD_REQUEST', message: 'Valid entry fee is required' }
+        error: { code: 'BAD_REQUEST', message: 'Minimum room entry fee is ₹10' }
       }, { status: 400 });
     }
 

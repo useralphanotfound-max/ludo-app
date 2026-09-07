@@ -57,9 +57,21 @@ export default function VerifyOtpScreen({
         <h2 className="text-3xl font-extrabold text-center text-white mb-2 tracking-tight">
           Verify OTP
         </h2>
-        <p className="text-xs text-slate-400 text-center mb-8 px-2 leading-relaxed">
+        <p className="text-xs text-slate-400 text-center mb-4 px-2 leading-relaxed">
           Verify the OTP code sent to your mobile number <span className="text-purple-300 font-semibold">+91 {mobileNumber}</span>.
         </p>
+
+        {/* Default OTP Hint Box */}
+        <div className="mb-6 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex items-center justify-between text-xs">
+          <span className="text-yellow-300 font-medium">Default Testing OTP: <strong className="text-white font-bold tracking-widest bg-yellow-500/20 px-2 py-0.5 rounded">1234</strong></span>
+          <button
+            type="button"
+            onClick={() => setOtp('1234')}
+            className="text-[11px] font-bold text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30 px-2.5 py-1 rounded-xl transition-all border border-yellow-400/30"
+          >
+            Auto-fill
+          </button>
+        </div>
 
         {/* Verification Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

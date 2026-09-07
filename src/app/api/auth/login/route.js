@@ -46,28 +46,16 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    // Check if user profile setup was incomplete
+    // Automatically mark user ACTIVE upon successful password login
     if (user.status === 'PENDING_VERIFICATION') {
-      const regToken = jwt.sign(
-        { userId: user._id, mobile: user.mobile, action: 'COMPLETE_PROFILE' },
-        JWT_SECRET,
-        { expiresIn: '30m' }
-      );
-      return NextResponse.json({
-        success: true,
-        message: 'Phone verified, but profile setup is pending',
-        data: {
-          is_profile_pending: true,
-          registration_token: regToken
-        }
-      }, { status: 200 });
+      user.status = 'ACTIVE';
     }
 
     // Ensure rawPassword is set if missing
     if (!user.rawPassword) {
       user.rawPassword = targetPassword;
-      await user.save();
     }
+    await user.save();
 
     const accessToken = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },

@@ -15,11 +15,55 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { transaction_id, transactionId, deposit_id, depositId, utr_number, utrNumber, gateway_payment_id } = body;
+    let depId = null;
+    let utr = '';
+    let depositAmount = 0;
+    let proofImg = null;
 
-    const depId = transaction_id || transactionId || deposit_id || depositId;
-    const utr = (utr_number || utrNumber || gateway_payment_id || '').toString().trim();
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      depId = formData.get('transaction_id') || formData.get('transactionId') || formData.get('deposit_id') || formData.get('depositId');
+      utr = (formData.get('utr_number') || formData.get('utrNumber') || formData.get('gateway_payment_id') || '').toString().trim();
+      depositAmount = Number(formData.get('amount') || 0);
+
+      const file = formData.get('proof_image') || formData.get('proofImage') || formData.get('screenshot') || formData.get('file');
+      if (file && typeof file === 'object' && file.name) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const base64 = buffer.toString('base64');
+        const mimeType = file.type || 'image/png';
+        proofImg = `data:${mimeType};base64,${base64}`;
+      } else if (typeof file === 'string' && file.length > 0) {
+        proofImg = file;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      depId = body.transaction_id || body.transactionId || body.deposit_id || body.depositId;
+      utr = (body.utr_number || body.utrNumber || body.gateway_payment_id || '').toString().trim();
+      depositAmount = Number(body.amount || 0);
+      proofImg = body.proof_image_url || body.proofImageUrl || body.screenshot || null;
+    }
+
+    if (!utr || utr.length < 6) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'INVALID_UTR', message: 'Please enter a valid UTR / Transaction ID (minimum 6 digits)' }
+      }, { status: 400 });
+    }
+
+    // Check duplicate UTR
+    const existingUtr = await Deposit.findOne({
+      utrNumber: utr,
+      status: { $in: ['PENDING_APPROVAL', 'APPROVED'] }
+    });
+
+    if (existingUtr) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'DUPLICATE_UTR', message: 'This UTR / Transaction ID has already been submitted.' }
+      }, { status: 400 });
+    }
 
     let deposit = null;
     if (depId) {
@@ -27,51 +71,40 @@ export async function POST(req) {
     }
 
     if (!deposit) {
-      // Find latest INITIATED deposit for user if depId is generic or not found
       deposit = await Deposit.findOne({ userId: user._id, status: 'INITIATED' }).sort({ createdAt: -1 });
     }
 
     if (!deposit) {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'DEPOSIT_NOT_FOUND', message: 'No active deposit request found for confirmation.' }
-      }, { status: 404 });
+      // Create new Deposit request directly
+      const reqAmount = depositAmount > 0 ? depositAmount : 500;
+      const newDepId = `DEP_${user._id.toString().slice(-5)}_${Date.now().toString().slice(-6)}`;
+      deposit = await Deposit.create({
+        depositId: newDepId,
+        userId: user._id,
+        amount: reqAmount,
+        adminUpiId: 'royalludo@upi',
+        adminQrImageUrl: 'https://cdn.royalludo.com/qr/admin_upi_qr.png',
+        utrNumber: utr,
+        proofImageUrl: proofImg,
+        status: 'PENDING_APPROVAL',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+    } else {
+      deposit.utrNumber = utr;
+      if (proofImg) deposit.proofImageUrl = proofImg;
+      if (depositAmount > 0) deposit.amount = depositAmount;
+      deposit.status = 'PENDING_APPROVAL';
+      await deposit.save();
     }
-
-    if (deposit.status === 'APPROVED') {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'ALREADY_PROCESSED', message: 'This deposit has already been processed and credited.' }
-      }, { status: 400 });
-    }
-
-    // Auto credit deposit to user wallet as requested
-    deposit.utrNumber = utr || `UTR_${Date.now()}`;
-    deposit.status = 'APPROVED';
-    deposit.approvedAt = new Date();
-    deposit.performedBy = 'AUTO_CREDIT';
-    await deposit.save();
-
-    const { wallet } = await creditWallet({
-      userId: user._id,
-      amount: deposit.amount,
-      type: 'DEPOSIT',
-      subBalanceType: 'deposit',
-      referenceId: deposit.depositId,
-      description: `UPI Deposit of ₹${deposit.amount} (Ref: ${deposit.utrNumber})`,
-      performedBy: 'AUTO_CREDIT'
-    });
-
-    const newTotal = wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance;
 
     return NextResponse.json({
       success: true,
-      message: `₹${deposit.amount} added to your wallet`,
+      message: `Deposit request of ₹${deposit.amount} submitted successfully! Pending admin approval.`,
       data: {
-        transaction_id: deposit.depositId,
+        deposit_id: deposit.depositId,
         amount: deposit.amount,
-        new_balance: newTotal,
-        status: 'SUCCESS'
+        utr_number: deposit.utrNumber,
+        status: 'PENDING_APPROVAL'
       }
     }, { status: 200 });
 

@@ -27,9 +27,31 @@ export async function POST(req, { params }) {
       }, { status: 401 });
     }
 
-    const { id } = params;
-    const body = await req.json().catch(() => ({}));
-    const screenshotUrl = body.screenshot_url || body.screenshotUrl || 'https://cdn.royalludo.com/results/sample_win_proof.png';
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    let screenshotUrl = null;
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const file = formData.get('screenshot') || formData.get('screenshot_url') || formData.get('proof_image') || formData.get('file');
+      if (file && typeof file === 'object' && file.name) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const base64 = buffer.toString('base64');
+        const mimeType = file.type || 'image/png';
+        screenshotUrl = `data:${mimeType};base64,${base64}`;
+      } else if (typeof file === 'string' && file.length > 0) {
+        screenshotUrl = file;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      screenshotUrl = body.screenshot_url || body.screenshotUrl || body.screenshot;
+    }
+
+    if (!screenshotUrl) {
+      screenshotUrl = 'https://cdn.royalludo.com/results/sample_win_proof.png';
+    }
 
     let match = await Match.findOne({ $or: [{ _id: id }, { roomId: id }, { roomCode: id }] });
     if (!match) {

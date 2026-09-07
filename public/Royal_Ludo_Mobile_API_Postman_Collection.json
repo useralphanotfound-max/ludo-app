@@ -1,991 +1,1044 @@
 {
-	"info": {
-		"_postman_id": "f8a92b3a-4e2b-4781-8b29-royalludo-mobile-api",
-		"name": "Royal Ludo — Complete Mobile App API Collection",
-		"description": "Comprehensive Postman collection for Royal Ludo Mobile Web Application APIs. Includes Authentication, Profile, Wallet Deposits & Cashouts, Room Lifecycle (Create/Join/Share/404 Refund), Matches, Tasks, Scratch Cards, Referrals, and Support Tickets.",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "https://royalludo-nine.vercel.app",
-			"type": "string"
-		},
-		{
-			"key": "access_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "refresh_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "otp_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "room_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "match_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "task_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "scratch_card_id",
-			"value": "",
-			"type": "string"
-		}
-	],
-	"item": [
-		{
-			"name": "1. Authentication",
-			"item": [
-				{
-					"name": "Send OTP (with Password)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": \"9876543210\",\n  \"country_code\": \"+91\",\n  \"password\": \"Password123\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/send-otp",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"send-otp"
-							]
-						},
-						"description": "Generates a 4-digit OTP for testing ('1234') and returns an OTP Token required for verification."
-					},
-					"response": []
-				},
-				{
-					"name": "Verify OTP & Register User",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"1234\",\n  \"otp_token\": \"{{otp_token}}\",\n  \"password\": \"Password123\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/verify-otp",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"verify-otp"
-							]
-						},
-						"description": "Verifies 4-digit OTP code ('1234'), initializes user profile & wallet in MongoDB, and returns JWT access_token & refresh_token."
-					},
-					"response": []
-				},
-				{
-					"name": "Resend OTP",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": \"9876543210\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/resend-otp",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"resend-otp"
-							]
-						},
-						"description": "Resends 4-digit verification OTP code to the requested mobile number."
-					},
-					"response": []
-				},
-				{
-					"name": "Refresh Access Token",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/refresh",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"refresh"
-							]
-						},
-						"description": "Refreshes an expired JWT access token using a valid refresh token."
-					},
-					"response": []
-				},
-				{
-					"name": "User Logout",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/logout",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"logout"
-							]
-						},
-						"description": "Invalidates active session token."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "2. User & Profile",
-			"item": [
-				{
-					"name": "Get Current User Profile (Me)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/user/me",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"me"
-							]
-						},
-						"description": "Fetches current logged-in user profile, mobile, avatar, level, and stats."
-					},
-					"response": []
-				},
-				{
-					"name": "Update Profile (Username & Avatar)",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"KingPlayer_99\",\n  \"avatar_id\": \"av1\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/user/me",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"me"
-							]
-						},
-						"description": "Updates player username and avatar ID in MongoDB."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Available Avatars List",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/user/avatars",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"avatars"
-							]
-						},
-						"description": "Returns list of selectable profile avatars."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "3. Wallet & Payments",
-			"item": [
-				{
-					"name": "Get Wallet Balance Breakdown",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/wallet/balance",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"wallet",
-								"balance"
-							]
-						},
-						"description": "Retrieves user's total balance, deposit balance, winning balance, and bonus balance."
-					},
-					"response": []
-				},
-				{
-					"name": "Submit Deposit UTR / Transaction ID",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"utr_number\": \"UTR9876543210\",\n  \"amount\": 500\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/wallet/deposit/confirm",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"wallet",
-								"deposit",
-								"confirm"
-							]
-						},
-						"description": "Submits user's UTR Transaction ID for deposit confirmation and auto-credits the deposit balance."
-					},
-					"response": []
-				},
-				{
-					"name": "Initiate Payout Withdrawal",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"amount\": 200,\n  \"payout_method\": \"UPI\",\n  \"upi_id\": \"user@upi\",\n  \"account_number\": \"\",\n  \"ifsc_code\": \"\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/wallet/withdraw/initiate",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"wallet",
-								"withdraw",
-								"initiate"
-							]
-						},
-						"description": "Debits winning balance and creates a withdrawal request for admin approval/auto-payout."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Wallet Transaction History",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/wallet/transactions",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"wallet",
-								"transactions"
-							]
-						},
-						"description": "Gets past deposit, withdrawal, entry fee, and prize payout transactions."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "4. Rooms (1vs1 Classic Mode)",
-			"item": [
-				{
-					"name": "Create Room (Host 1vs1 Match)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"entry_fee\": 100,\n  \"mode\": \"CLASSIC\",\n  \"max_players\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/create",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"create"
-							]
-						},
-						"description": "Creates a 2-player Classic room. Debits host wallet balance and starts 45-second opponent waiting timer."
-					},
-					"response": []
-				},
-				{
-					"name": "Get My Hosted Room Status (Auto 45s Refund)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/my-room",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"my-room"
-							]
-						},
-						"description": "Checks current host room. Auto-cancels and refunds host wallet if no opponent joins within 45 seconds."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Available Open Rooms to Join",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/available",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"available"
-							]
-						},
-						"description": "Lists all active 1vs1 open rooms created by other players waiting for opponents."
-					},
-					"response": []
-				},
-				{
-					"name": "Join Room (Opponent)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/join",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"{{room_id}}",
-								"join"
-							]
-						},
-						"description": "Opponent joins room. Debits opponent wallet balance and updates room state to MATCHED."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Room Details",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/{{room_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"{{room_id}}"
-							]
-						},
-						"description": "Fetches specific room details, room code, and connected players."
-					},
-					"response": []
-				},
-				{
-					"name": "Cancel Room & Refund Wallet",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/cancel",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"{{room_id}}",
-								"cancel"
-							]
-						},
-						"description": "Cancels open room and refunds host entry fee back to wallet."
-					},
-					"response": []
-				},
-				{
-					"name": "Share Code / Link to Opponent",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/rooms/{{room_id}}/share-link",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"rooms",
-								"{{room_id}}",
-								"share-link"
-							]
-						},
-						"description": "Reveals private Ludo King room code to opponent after host clicks Share Code."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "5. Matches & Results",
-			"item": [
-				{
-					"name": "Get Match Result & Status",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/matches/{{match_id}}/result",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"matches",
-								"{{match_id}}",
-								"result"
-							]
-						},
-						"description": "Retrieves match outcome status, winner details, and dispute status."
-					},
-					"response": []
-				},
-				{
-					"name": "Submit Match Result Claim",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"match_outcome\": \"WIN\",\n  \"winner_id\": \"{{user_id}}\",\n  \"comment\": \"Won game by clearing all tokens\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/matches/{{match_id}}/result",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"matches",
-								"{{match_id}}",
-								"result"
-							]
-						},
-						"description": "Player submits match result claim (WIN / LOSS / CANCEL)."
-					},
-					"response": []
-				},
-				{
-					"name": "Upload Match Screenshot Proof",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"screenshot_url\": \"https://cdn.royalludo.com/proofs/match_win_proof.png\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/matches/{{match_id}}/upload-screenshot",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"matches",
-								"{{match_id}}",
-								"upload-screenshot"
-							]
-						},
-						"description": "Uploads match victory screenshot proof for automated winner verification."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Player Match History",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/matches/history",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"matches",
-								"history"
-							]
-						},
-						"description": "Lists player's past played matches, entry fees, winnings, and W/L statistics."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "6. Tasks & Rewards",
-			"item": [
-				{
-					"name": "Get Daily Tasks List",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/tasks",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"tasks"
-							]
-						},
-						"description": "Returns list of daily play tasks, streak rewards, and claim statuses."
-					},
-					"response": []
-				},
-				{
-					"name": "Claim Task Reward",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/tasks/{{task_id}}/claim",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"tasks",
-								"{{task_id}}",
-								"claim"
-							]
-						},
-						"description": "Claims task reward bonus coins into player wallet."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "7. Scratch Cards",
-			"item": [
-				{
-					"name": "Get Available Scratch Cards",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/scratch-cards",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"scratch-cards"
-							]
-						},
-						"description": "Gets player's unlocked mystery bonus scratch cards."
-					},
-					"response": []
-				},
-				{
-					"name": "Scratch Mystery Card",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/scratch-cards/{{scratch_card_id}}/scratch",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"scratch-cards",
-								"{{scratch_card_id}}",
-								"scratch"
-							]
-						},
-						"description": "Scratches card to reveal prize money and auto-credits bonus balance."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "8. Referrals",
-			"item": [
-				{
-					"name": "Get Referral Details & Stats",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/referral/info",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"referral",
-								"info"
-							]
-						},
-						"description": "Fetches player's unique referral code, total invited friends, and earned bonus cash."
-					},
-					"response": []
-				},
-				{
-					"name": "Apply Friend Referral Code",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"referral_code\": \"ROYAL9876\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/referral/apply",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"referral",
-								"apply"
-							]
-						},
-						"description": "Applies friend's referral code to claim sign-up referral cash."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "9. Support & Disputes",
-			"item": [
-				{
-					"name": "Get Support Contact Info",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/support/contact",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"support",
-								"contact"
-							]
-						},
-						"description": "Fetches customer support WhatsApp number and Telegram handle."
-					},
-					"response": []
-				},
-				{
-					"name": "Create Support Ticket",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"subject\": \"Deposit UTR pending\",\n  \"message\": \"I transferred ₹500 via UPI UTR 9876543210. Please credit my wallet.\",\n  \"category\": \"PAYMENT\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/support/ticket",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"support",
-								"ticket"
-							]
-						},
-						"description": "Submits a customer support ticket for admin assistance."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "10. System Web Status",
-			"item": [
-				{
-					"name": "Get Web Status (Game Visibility)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{baseUrl}}/api/web-status",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"web-status"
-							]
-						},
-						"description": "Public status API used by web clients to check if the web game is enabled or disabled (404)."
-					},
-					"response": []
-				}
-			]
-		}
-	]
+  "info": {
+    "_postman_id": "royal-ludo-mobile-api-v2026",
+    "name": "Royal Ludo — Complete Mobile App API Collection",
+    "description": "Complete Postman API collection for Royal Ludo Web Mobile Application. Features auto-token extraction script on login/verify-otp, auto-populating Authorization Bearer token header across all requests, full request bodies, query params, FormData image uploads, and realistic JSON responses.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://royalludo-nine.vercel.app",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otp_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "room_id",
+      "value": "6a9f4e22b104a7b15b7ab999",
+      "type": "string"
+    },
+    {
+      "key": "room_code",
+      "value": "482019",
+      "type": "string"
+    },
+    {
+      "key": "match_id",
+      "value": "6a9f5511b104a7b15b7ac111",
+      "type": "string"
+    },
+    {
+      "key": "task_id",
+      "value": "task_play_3_matches",
+      "type": "string"
+    },
+    {
+      "key": "scratch_card_id",
+      "value": "card_welcome_bonus",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "description": "APIs for Mobile Login, Registration with OTP (default 1234), optional Referral Code, and Token Refresh. Auto-saves access_token.",
+      "item": [
+        {
+          "name": "Direct Password Login (Auto-Saves Bearer Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    if (jsonData.data.refresh_token) pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Access Token automatically set to collection variable access_token!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9182279729\",\n  \"password\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates user using mobile number and password. Automatically sets the collection variable `access_token` upon success."
+          },
+          "response": [
+            {
+              "name": "200 OK — Successful Login",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"6a9c4e13b2d40b76220bb0bb\",\n      \"phone\": \"9182279729\",\n      \"username\": \"manish\",\n      \"avatar_url\": \"https://cdn.royalludo.com/avatars/av1.png\",\n      \"balance\": 500\n    },\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"token_type\": \"Bearer\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send OTP (Registration + Optional Referral Code)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.otp_token) {",
+                  "    pm.collectionVariables.set('otp_token', jsonData.data.otp_token);",
+                  "    console.log('✅ OTP Token automatically set to collection variable otp_token!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"password\": \"Password123\",\n  \"verify_password\": \"Password123\",\n  \"referral_code\": \"ROYAL9729\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ]
+            },
+            "description": "Generates 4-digit OTP ('1234') for registration and returns otp_token. Accepts phone, password, verify_password, and optional referral_code."
+          },
+          "response": [
+            {
+              "name": "200 OK — OTP Sent",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent successfully to +91 9876543210\",\n  \"data\": {\n    \"otp_token\": \"opt_tok_sample_9876543210\",\n    \"expires_in\": 300,\n    \"test_otp\": \"1234\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP & Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    if (jsonData.data.refresh_token) pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Access Token automatically set after registration!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"1234\",\n  \"otp_token\": \"{{otp_token}}\",\n  \"password\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Verifies OTP '1234', registers user, hashes password, and returns access_token."
+          },
+          "response": [
+            {
+              "name": "200 OK — Registration Successful",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Mobile number verified and account created successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"6a9c4e13b2d40b76220bb999\",\n      \"phone\": \"9876543210\",\n      \"username\": \"Player_3210\",\n      \"avatar_url\": \"https://cdn.royalludo.com/avatars/av1.png\"\n    },\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refresh_token\": \"ref_tok_sample_3210\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Exchanges valid refresh token for a new JWT access_token."
+          },
+          "response": [
+            {
+              "name": "200 OK — Token Refreshed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_token...\",\n    \"token_type\": \"Bearer\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Profile & User Data",
+      "item": [
+        {
+          "name": "Get Profile & Wallet Totals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "Returns current logged in user profile, stats, level, and wallet balance."
+          },
+          "response": [
+            {
+              "name": "200 OK — User Profile Data",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"6a9c4e13b2d40b76220bb0bb\",\n    \"phone\": \"9182279729\",\n    \"username\": \"manish\",\n    \"avatar_id\": \"av1\",\n    \"avatar_url\": \"https://cdn.royalludo.com/avatars/av1.png\",\n    \"balance\": 500,\n    \"withdrawal_balance\": 0,\n    \"bonus_balance\": 0,\n    \"pending_balance\": 0,\n    \"level\": 1,\n    \"stats\": {\n      \"games_played\": 0,\n      \"wins\": 0,\n      \"losses\": 0,\n      \"win_rate\": 0\n    },\n    \"referral_code\": \"MANISH9729\",\n    \"is_kyc_verified\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile Name / Avatar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"manish_king\",\n  \"avatar_id\": \"av2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "Updates username or avatar selection."
+          },
+          "response": [
+            {
+              "name": "200 OK — Profile Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"id\": \"6a9c4e13b2d40b76220bb0bb\",\n    \"username\": \"manish_king\",\n    \"avatar_id\": \"av2\",\n    \"avatar_url\": \"https://cdn.royalludo.com/avatars/av2.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Available Avatars List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/avatars",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "avatars"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Avatars",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"av1\",\n      \"name\": \"King Royal\",\n      \"url\": \"https://cdn.royalludo.com/avatars/av1.png\"\n    },\n    {\n      \"id\": \"av2\",\n      \"name\": \"Queen Cyber\",\n      \"url\": \"https://cdn.royalludo.com/avatars/av2.png\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Wallet & Deposits",
+      "item": [
+        {
+          "name": "Get Live Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/balance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "balance"
+              ]
+            },
+            "description": "Returns total balance, deposit balance, winning balance, and bonus balance."
+          },
+          "response": [
+            {
+              "name": "200 OK — Wallet Balance",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"total_balance\": 500,\n    \"deposit_balance\": 500,\n    \"winning_balance\": 0,\n    \"bonus_balance\": 0,\n    \"withdrawal_balance\": 0,\n    \"pending_balance\": 0,\n    \"currency\": \"INR\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Manual UPI Deposit (FormData Multipart Upload)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "amount",
+                  "value": "500",
+                  "type": "text",
+                  "description": "Deposit amount in INR (e.g. 500)"
+                },
+                {
+                  "key": "utr_number",
+                  "value": "123456676655554",
+                  "type": "text",
+                  "description": "12-digit UTR or Transaction Ref ID"
+                },
+                {
+                  "key": "proof_image",
+                  "type": "file",
+                  "description": "Payment screenshot image file (Choose File)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/deposit/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "deposit",
+                "confirm"
+              ]
+            },
+            "description": "Submits manual deposit via FormData multipart/form-data upload (choose file screenshot + UTR + amount)."
+          },
+          "response": [
+            {
+              "name": "201 Created — Deposit Submitted",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Deposit request submitted successfully. Pending admin approval.\",\n  \"data\": {\n    \"deposit_id\": \"DEP_bb0bb_261307\",\n    \"amount\": 500,\n    \"utr_number\": \"123456676655554\",\n    \"proof_image_url\": \"data:image/png;base64,sample...\",\n    \"status\": \"PENDING_APPROVAL\",\n    \"created_at\": \"2026-09-07T16:24:21.312Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Initiate Cashout (Withdrawal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 200,\n  \"withdrawal_method\": \"upi\",\n  \"upi_id\": \"manish@upi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/withdraw/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "withdraw",
+                "initiate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Withdrawal Initiated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Withdrawal request of ₹200 submitted successfully.\",\n  \"data\": {\n    \"withdrawal_id\": \"WDR_99812\",\n    \"status\": \"PENDING_APPROVAL\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/transactions?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Transaction History",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"transactions\": [\n      {\n        \"id\": \"tx_101\",\n        \"type\": \"DEPOSIT\",\n        \"amount\": 500,\n        \"title\": \"Approved UPI Deposit\",\n        \"status\": \"SUCCESS\",\n        \"is_credit\": true,\n        \"created_at\": \"2026-09-07T16:30:10.668Z\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Room Lifecycle",
+      "item": [
+        {
+          "name": "Create Ludo Room (Min ₹10, Default ₹500)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.room_id) {",
+                  "    pm.collectionVariables.set('room_id', jsonData.data.room_id);",
+                  "    if (jsonData.data.room_code) pm.collectionVariables.set('room_code', jsonData.data.room_code);",
+                  "    console.log('✅ Room ID & Code automatically saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entry_fee\": 500,\n  \"game_mode\": \"CLASSIC\",\n  \"is_private\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "create"
+              ]
+            },
+            "description": "Creates a new Ludo room (Minimum entry fee ₹10). Deducts entry fee from creator wallet."
+          },
+          "response": [
+            {
+              "name": "201 Created — Room Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Room created successfully. Waiting for an opponent to join...\",\n  \"data\": {\n    \"room_id\": \"6a9f4e22b104a7b15b7ab999\",\n    \"room_code\": \"482019\",\n    \"game_mode\": \"CLASSIC\",\n    \"player_count\": 2,\n    \"entry_fee\": 500,\n    \"prize_pool\": 900,\n    \"platform_commission\": 100,\n    \"is_private\": false,\n    \"status\": \"WAITING\",\n    \"expires_at\": \"2026-09-07T16:45:00.000Z\",\n    \"timeout_seconds\": 45\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Available Public Waiting Rooms",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/available",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "available"
+              ]
+            },
+            "description": "Fetches non-expired public waiting rooms. Runs backend auto-expiration & auto-refund engine."
+          },
+          "response": [
+            {
+              "name": "200 OK — Available Rooms",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"rooms\": [\n      {\n        \"room_id\": \"6a9f4e22b104a7b15b7ab999\",\n        \"room_code\": \"482019\",\n        \"game_mode\": \"CLASSIC\",\n        \"player_count\": 2,\n        \"entry_fee\": 500,\n        \"prize_pool\": 900,\n        \"status\": \"WAITING\",\n        \"expires_at\": \"2026-09-07T16:45:00.000Z\",\n        \"creator\": {\n          \"id\": \"6a9c4e13b2d40b76220bb0bb\",\n          \"username\": \"manish\",\n          \"avatar_url\": \"https://cdn.royalludo.com/avatars/av1.png\"\n        }\n      }\n    ],\n    \"count\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Active Created Room",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/my-room",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "my-room"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — My Room Details",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"room_id\": \"6a9f4e22b104a7b15b7ab999\",\n    \"room_code\": \"482019\",\n    \"game_mode\": \"CLASSIC\",\n    \"player_count\": 2,\n    \"entry_fee\": 500,\n    \"prize_pool\": 900,\n    \"status\": \"WAITING\",\n    \"players_joined\": 1,\n    \"players\": [\n      {\n        \"user_id\": \"6a9c4e13b2d40b76220bb0bb\",\n        \"username\": \"manish\",\n        \"slot\": 1,\n        \"is_host\": true\n      },\n      {\n        \"slot\": 2,\n        \"is_empty\": true\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Join Room as Opponent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{room_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/join",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "join"
+              ]
+            },
+            "description": "Joins a waiting room. Deducts entry fee and starts match when full."
+          },
+          "response": [
+            {
+              "name": "200 OK — Match Started",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": true,\n  \"message\": \"Match started! All 2 players matched.\",\n  \"data\": {\n    \"roomId\": \"6a9f4e22b104a7b15b7ab999\",\n    \"roomCode\": \"482019\",\n    \"status\": \"IN_PROGRESS\",\n    \"joinedPlayersCount\": 2,\n    \"matchId\": \"6a9f5511b104a7b15b7ac111\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Matches & Game Results",
+      "item": [
+        {
+          "name": "Get Match History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matches",
+                "history"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Match History",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": true,\n  \"message\": \"Match history retrieved\",\n  \"data\": [\n    {\n      \"id\": \"6a9f5511b104a7b15b7ac111\",\n      \"gameMode\": \"CLASSIC\",\n      \"entryFeeRs\": 500,\n      \"prizePoolRs\": 900,\n      \"status\": \"COMPLETED\",\n      \"winnerId\": \"6a9c4e13b2d40b76220bb0bb\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Match Result (FormData Screenshot Upload)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "matchId",
+                  "value": "{{match_id}}",
+                  "type": "text",
+                  "description": "Match ID"
+                },
+                {
+                  "key": "claimedResult",
+                  "value": "WON",
+                  "type": "text",
+                  "description": "WON or LOST"
+                },
+                {
+                  "key": "screenshot",
+                  "type": "file",
+                  "description": "Winning board screenshot image file (Choose File)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/submit-result",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matches",
+                "submit-result"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Result Submitted & Disbursed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": true,\n  \"message\": \"Match auto-completed! Winner declared and awarded ₹900.\",\n  \"data\": {\n    \"autoResolved\": true,\n    \"status\": \"COMPLETED\",\n    \"winnerUsername\": \"manish\",\n    \"prizePoolRs\": 900\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Tasks, Scratch Cards & Referrals",
+      "item": [
+        {
+          "name": "Get Daily Tasks List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Tasks List",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"task_id\": \"task_play_3_matches\",\n      \"title\": \"Play 3 Ludo Battles\",\n      \"reward\": 50,\n      \"reward_type\": \"cash\",\n      \"is_claimed\": false\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Claim Task Reward",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{task_id}}/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{task_id}}",
+                "claim"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Task Reward Claimed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward claimed! ₹50 cash added to your wallet.\",\n  \"data\": {\n    \"task_id\": \"task_play_3_matches\",\n    \"reward\": 50\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Scratch Cards List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/scratch-cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "scratch-cards"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Scratch Cards",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"card_id\": \"card_welcome_bonus\",\n      \"name\": \"Welcome Gift Scratch Card\",\n      \"is_scratched\": false,\n      \"reward_amount\": 100\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Scratch Card to Reveal Cash",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/scratch-cards/{{scratch_card_id}}/scratch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "scratch-cards",
+                "{{scratch_card_id}}",
+                "scratch"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Scratch Revealed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Congratulations! You won ₹100!\",\n  \"data\": {\n    \"card_id\": \"card_welcome_bonus\",\n    \"reward_amount\": 100\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Referral Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/referral/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "referral",
+                "info"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Referrals",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"referral_code\": \"MANISH9729\",\n    \"share_link\": \"https://royalludo.com/refer/MANISH9729\",\n    \"bonus_per_referral\": 50,\n    \"total_referrals\": 0,\n    \"total_earned\": 0,\n    \"referred_users\": []\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Support & Maintenance",
+      "item": [
+        {
+          "name": "Submit Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"payment\",\n  \"subject\": \"Deposit issue\",\n  \"message\": \"My deposit of 500 RS\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support/ticket",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "ticket"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created — Ticket Submitted",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Your support ticket has been submitted\",\n  \"data\": {\n    \"ticket_id\": \"tkt_00bb_998123\",\n    \"category\": \"payment\",\n    \"subject\": \"Deposit issue\",\n    \"status\": \"OPEN\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Live Web Maintenance Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/web-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "web-status"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Web Status",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"isWebGameEnabled\": true,\n  \"updatedAt\": \"2026-09-07T16:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

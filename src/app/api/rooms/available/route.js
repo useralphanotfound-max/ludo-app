@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Room } from '@/lib/models/Room';
+import { User } from '@/lib/models/User';
 import { refundWallet } from '@/lib/walletHelper';
 
 export async function GET(req) {
@@ -17,15 +18,22 @@ export async function GET(req) {
     });
 
     for (const room of expiredRooms) {
-      room.status = 'EXPIRED';
-      room.refundedAt = now;
-      await room.save();
-      await refundWallet({
-        userId: room.creatorId,
-        amount: room.entryFee,
-        referenceId: room.roomCode,
-        description: `Auto-refund for expired Room #${room.roomCode} (No player joined in 45s)`
-      });
+      try {
+        await Room.updateOne(
+          { _id: room._id },
+          { $set: { status: 'EXPIRED', refundedAt: now } }
+        );
+        if (room.entryFee > 0 && room.creatorId) {
+          await refundWallet({
+            userId: room.creatorId,
+            amount: room.entryFee,
+            referenceId: room.roomCode,
+            description: `Auto-refund for expired Room #${room.roomCode} (No player joined in 45s)`
+          });
+        }
+      } catch (refundErr) {
+        console.error('Expired room refund error:', room.roomCode, refundErr);
+      }
     }
 
     // Fetch active non-expired public waiting rooms

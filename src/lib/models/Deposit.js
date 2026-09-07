@@ -7,6 +7,7 @@ const depositSchema = new mongoose.Schema({
   adminUpiId: { type: String, required: true },
   adminQrImageUrl: { type: String, required: true },
   utrNumber: { type: String, default: null, index: true },
+  proofImageUrl: { type: String, default: null },
   status: { type: String, enum: ['INITIATED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXPIRED'], default: 'INITIATED', index: true },
   expiresAt: { type: Date, required: true },
   rejectionReason: { type: String, default: null },

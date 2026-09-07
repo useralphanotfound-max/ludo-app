@@ -21,7 +21,7 @@ export async function PUT(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { platformCommissionPct, minDepositRs, maxDepositRs, minWithdrawRs, maxWithdrawRs, maintenanceMode, maintenanceMessage, forceUpdateVersion } = body;
+    const { platformCommissionPct, minDepositRs, maxDepositRs, minWithdrawRs, maxWithdrawRs, referralBonusRs, maintenanceMode, maintenanceMessage, forceUpdateVersion } = body;
     const clientIp = getClientIp(req);
 
     let settings = await GameSettings.findOne({ key: 'global_settings' });
@@ -32,6 +32,7 @@ export async function PUT(req) {
     if (maxDepositRs !== undefined) settings.maxDepositRs = maxDepositRs;
     if (minWithdrawRs !== undefined) settings.minWithdrawRs = minWithdrawRs;
     if (maxWithdrawRs !== undefined) settings.maxWithdrawRs = maxWithdrawRs;
+    if (referralBonusRs !== undefined) settings.referralBonusRs = referralBonusRs;
     if (maintenanceMode !== undefined) settings.maintenanceMode = maintenanceMode;
     if (maintenanceMessage !== undefined) settings.maintenanceMessage = maintenanceMessage;
     if (forceUpdateVersion !== undefined) settings.forceUpdateVersion = forceUpdateVersion;

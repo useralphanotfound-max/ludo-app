@@ -94,18 +94,18 @@ export async function GET(req) {
       ]).catch(() => []),
 
       // Deposits
-      Transaction.aggregate([
-        { $match: { type: 'DEPOSIT', status: 'SUCCESS' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ]).catch(() => []),
-
-      Transaction.aggregate([
-        { $match: { type: 'DEPOSIT', status: 'SUCCESS', createdAt: { $gte: startOfToday } } },
+      Deposit.aggregate([
+        { $match: { status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).catch(() => []),
 
       Deposit.aggregate([
-        { $match: { status: 'PENDING' } },
+        { $match: { status: { $in: ['APPROVED', 'SUCCESSFUL', 'SUCCESS'] }, createdAt: { $gte: startOfToday } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]).catch(() => []),
+
+      Deposit.aggregate([
+        { $match: { status: { $in: ['PENDING_APPROVAL', 'PENDING', 'INITIATED'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).catch(() => []),
 
@@ -190,12 +190,39 @@ export async function GET(req) {
     const totalGGRPaise = Math.round((ggrAgg?.[0]?.totalGGR || 0) * 0.1);
     const totalPrizesPaise = totalPrizesAgg?.[0]?.total || 0;
 
-    const formattedTicker = (recentTxns || []).map(t => ({
-      type: t.type || 'DEPOSIT',
-      user: t.userId?.username || `user_${t.referenceId?.slice(-5) || '101'}`,
-      amount: `${t.type === 'WITHDRAWAL' || t.type === 'MATCH_ENTRY' ? '-' : '+'}₹${Math.round((t.amount || 0) / 100).toLocaleString('en-IN')}`,
-      isPositive: t.type !== 'WITHDRAWAL' && t.type !== 'MATCH_ENTRY'
-    }));
+    let formattedTicker = [];
+    if (recentTxns && recentTxns.length > 0) {
+      formattedTicker = recentTxns.map(t => ({
+        type: t.type || 'DEPOSIT',
+        user: t.userId?.username || 'user',
+        amount: `${t.type === 'WITHDRAWAL' || t.type === 'MATCH_ENTRY' ? '-' : '+'}₹${Math.round(t.amount || 0).toLocaleString('en-IN')}`,
+        isPositive: t.type !== 'WITHDRAWAL' && t.type !== 'MATCH_ENTRY'
+      }));
+    } else {
+      const [recentDeposits, recentWithdrawals] = await Promise.all([
+        Deposit.find().sort({ createdAt: -1 }).limit(5).populate('userId', 'username').lean().catch(() => []),
+        WithdrawalRequest.find().sort({ createdAt: -1 }).limit(5).populate('userId', 'username').lean().catch(() => [])
+      ]);
+
+      const combined = [
+        ...(recentDeposits || []).map(d => ({
+          type: 'DEPOSIT',
+          user: d.userId?.username || 'user',
+          amount: `+₹${Math.round(d.amount || 0).toLocaleString('en-IN')}`,
+          isPositive: true,
+          createdAt: d.createdAt
+        })),
+        ...(recentWithdrawals || []).map(w => ({
+          type: 'WITHDRAWAL',
+          user: w.userId?.username || 'user',
+          amount: `-₹${Math.round((w.amountPaise || 0) / 100).toLocaleString('en-IN')}`,
+          isPositive: false,
+          createdAt: w.createdAt
+        }))
+      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
+
+      formattedTicker = combined;
+    }
 
     // Construct 7-day revenue trend array directly from DB
     const matchMap = {};

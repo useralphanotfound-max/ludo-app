@@ -39,7 +39,7 @@ export default function CreateRoomScreen({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#070913] text-white p-4 relative overflow-y-auto">
-      
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button
@@ -58,7 +58,7 @@ export default function CreateRoomScreen({
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="space-y-6 max-w-sm mx-auto w-full">
-        
+
         {/* Game Mode */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-2">Game Mode</label>

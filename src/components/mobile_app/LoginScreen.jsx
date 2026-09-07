@@ -1,11 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import { ArrowRight, ShieldCheck, Award, Headphones, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Award, Headphones, Lock, Eye, EyeOff, AlertCircle, UserPlus, LogIn } from 'lucide-react';
 
-export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
+export default function LoginScreen({ onLogin, onSendOtp, isSubmitting, errorMessage }) {
+  const [isRegisterMode, setIsRegisterMode] = useState(false); // false = Login mode (default), true = Register mode
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -16,6 +18,11 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
     if (validationError) setValidationError('');
   };
 
+  const toggleMode = (targetRegisterMode) => {
+    setIsRegisterMode(targetRegisterMode);
+    setValidationError('');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setValidationError('');
@@ -24,16 +31,26 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
       setValidationError('Please enter a valid 10-digit mobile number');
       return;
     }
-    if (!password || password.length < 6) {
-      setValidationError('Password must be at least 6 characters long');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setValidationError('Create Password and Verify Password do not match');
-      return;
-    }
 
-    onSendOtp(mobileNumber, password);
+    if (isRegisterMode) {
+      if (!password || password.length < 6) {
+        setValidationError('Password must be at least 6 characters long');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setValidationError('Create Password and Verify Password do not match');
+        return;
+      }
+      onSendOtp(mobileNumber, password, referralCode);
+    } else {
+      if (!password) {
+        setValidationError('Please enter your password');
+        return;
+      }
+      if (onLogin) {
+        onLogin(mobileNumber, password);
+      }
+    }
   };
 
   return (
@@ -42,7 +59,7 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-purple-900/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-sm my-auto pt-6 pb-6">
-        {/* Login Card */}
+        {/* Login / Register Card */}
         <div className="bg-[#121623]/90 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-purple-950/20 relative">
           
           {/* Logo Graphic */}
@@ -60,9 +77,23 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-center text-white mb-1.5">Login / Register</h2>
+          <h2 className="text-2xl font-bold text-center text-white mb-1.5 flex items-center justify-center gap-2">
+            {isRegisterMode ? (
+              <>
+                <UserPlus className="w-6 h-6 text-yellow-400" />
+                <span>Create Account</span>
+              </>
+            ) : (
+              <>
+                <LogIn className="w-6 h-6 text-yellow-400" />
+                <span>Login to Royal Ludo</span>
+              </>
+            )}
+          </h2>
           <p className="text-xs text-slate-400 text-center mb-6">
-            Enter your mobile number and set your account password.
+            {isRegisterMode
+              ? 'Enter your mobile number and set your password to register.'
+              : 'Enter your mobile number and password to sign in.'}
           </p>
 
           {/* Form */}
@@ -89,10 +120,10 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
               </div>
             </div>
 
-            {/* Create Password Field */}
+            {/* Password Field (Login or Create Password) */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Create Password
+                {isRegisterMode ? 'Create Password' : 'Password'}
               </label>
               <div className="relative flex items-center">
                 <div className="absolute left-3.5 text-slate-400">
@@ -102,7 +133,7 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create password (min 6 chars)"
+                  placeholder={isRegisterMode ? 'Create password (min 6 chars)' : 'Enter your password'}
                   className="w-full pl-10 pr-10 py-3.5 bg-[#1a2030] border border-slate-700/80 rounded-2xl text-white font-medium text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all placeholder:text-slate-500"
                   disabled={isSubmitting}
                 />
@@ -116,32 +147,54 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
               </div>
             </div>
 
-            {/* Verify Password Field */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Verify Password
-              </label>
-              <div className="relative flex items-center">
-                <div className="absolute left-3.5 text-slate-400">
-                  <Lock className="w-4 h-4" />
+            {/* Verify Password Field (Only in Register Mode) */}
+            {isRegisterMode && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Verify Password
+                  </label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3.5 text-slate-400">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter password to verify"
+                      className="w-full pl-10 pr-10 py-3.5 bg-[#1a2030] border border-slate-700/80 rounded-2xl text-white font-medium text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all placeholder:text-slate-500"
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 text-slate-400 hover:text-white"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password to verify"
-                  className="w-full pl-10 pr-10 py-3.5 bg-[#1a2030] border border-slate-700/80 rounded-2xl text-white font-medium text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all placeholder:text-slate-500"
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3.5 text-slate-400 hover:text-white"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+
+                {/* Referral Code (Optional) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">
+                      Referral Code
+                    </label>
+                    <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">OPTIONAL</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. ROYAL9729"
+                    className="w-full px-4 py-3.5 bg-[#1a2030] border border-slate-700/80 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all placeholder:text-slate-500 tracking-wider uppercase"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Error Messages */}
             {(validationError || errorMessage) && (
@@ -154,13 +207,53 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || mobileNumber.length !== 10 || !password || password !== confirmPassword}
-              className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-bold text-base rounded-2xl shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-yellow-300/40"
+              disabled={
+                isSubmitting ||
+                mobileNumber.length !== 10 ||
+                !password ||
+                (isRegisterMode && password !== confirmPassword)
+              }
+              className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-bold text-base rounded-2xl shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-yellow-300/40 mt-2"
             >
-              <span>{isSubmitting ? 'Sending OTP...' : 'Send OTP'}</span>
+              <span>
+                {isSubmitting
+                  ? isRegisterMode
+                    ? 'Sending OTP...'
+                    : 'Logging in...'
+                  : isRegisterMode
+                  ? 'Register'
+                  : 'Login'}
+              </span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
+
+          {/* Toggle between Login and Register Mode */}
+          <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
+            {isRegisterMode ? (
+              <p className="text-xs text-slate-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleMode(false)}
+                  className="text-yellow-400 font-bold hover:underline ml-1"
+                >
+                  Login here
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Not a user?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleMode(true)}
+                  className="text-yellow-400 font-bold hover:underline ml-1"
+                >
+                  Register
+                </button>
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Feature Badges */}
@@ -200,3 +293,4 @@ export default function LoginScreen({ onSendOtp, isSubmitting, errorMessage }) {
     </div>
   );
 }
+

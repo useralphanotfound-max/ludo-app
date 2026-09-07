@@ -22,33 +22,39 @@ export default function DepositOperationsPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [summaryStats, setSummaryStats] = useState(null);
+  const [depositTrend, setDepositTrend] = useState([]);
   const [methodDonut, setMethodDonut] = useState([]);
 
   useEffect(() => {
-    fetchDeposits();
+    fetchDeposits(false);
+    const interval = setInterval(() => {
+      fetchDeposits(true);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [statusFilter, search, page]);
 
-  const fetchDeposits = async () => {
+  const fetchDeposits = async (isSilent = false) => {
     try {
-      setLoading(true);
-      const res = await apiFetch(`/admin/deposits?status=${statusFilter}&search=${encodeURIComponent(search)}&page=${page}&limit=20`);
+      if (!isSilent) setLoading(true);
+      const res = await apiFetch(`/admin/deposits?status=${statusFilter}&search=${encodeURIComponent(search)}&page=${page}&limit=20&t=${Date.now()}`);
       if (res.status && res.data) {
         setDeposits(res.data);
         if (res.pagination) setPagination(res.pagination);
         if (res.summaryStats) setSummaryStats(res.summaryStats);
         if (res.methodDonutData) setMethodDonut(res.methodDonutData);
+        if (res.depositTrendData) setDepositTrend(res.depositTrendData);
       }
     } catch (e) {
       console.error('Fetch deposits error:', e);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   const handleVerifyDeposit = async (deposit) => {
     const confirm = await Swal.fire({
       title: 'Approve & Credit Deposit?',
-      text: `Verify Transaction UTR / Ref ID: ${deposit.depositId || deposit.id}. If valid, ₹${deposit.amountRs} will be credited to ${deposit.user?.username || 'User'}'s wallet.`,
+      text: `Verify Transaction UTR / Ref ID: ${deposit.utrNumber || deposit.depositId || deposit.id}. If valid, ₹${deposit.amountRs} will be credited to ${deposit.user?.username || 'User'}'s wallet.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: 'var(--emerald)',
@@ -62,7 +68,7 @@ export default function DepositOperationsPage() {
     try {
       const res = await apiFetch('/admin/deposits', {
         method: 'POST',
-        body: JSON.stringify({ depositId: deposit.id, action: 'RECONCILE' })
+        body: JSON.stringify({ depositId: deposit.id || deposit.depositId, action: 'APPROVE' })
       });
       if (res.status) {
         Swal.fire({ title: 'Approved & Credited', text: res.message || 'Deposit verified and credited to user wallet.', icon: 'success', background: '#111624', color: '#ffffff' });
@@ -73,20 +79,18 @@ export default function DepositOperationsPage() {
     }
   };
 
-  const depositTrendData = [
-    { name: 'Day 1', amount: 18000 },
-    { name: 'Day 3', amount: 24000 },
-    { name: 'Day 5', amount: 22000 },
-    { name: 'Day 7', amount: 31000 },
-    { name: 'Day 9', amount: 39000 },
-    { name: 'Day 11', amount: 44000 },
-    { name: 'Day 14', amount: 52000 }
+  const depositTrendData = depositTrend.length > 0 ? depositTrend : [
+    { name: 'Day 1', amount: 0 },
+    { name: 'Day 3', amount: 0 },
+    { name: 'Day 5', amount: 0 },
+    { name: 'Day 7', amount: 0 },
+    { name: 'Day 9', amount: 0 },
+    { name: 'Day 11', amount: 0 },
+    { name: 'Day 14', amount: 0 }
   ];
 
-  const methodDonutData = [
-    { name: 'UPI Direct / PhonePe / GPay', value: 380, color: '#10b981' },
-    { name: 'Bank Transfer / NEFT', value: 85, color: '#3b82f6' },
-    { name: 'QR Code Direct', value: 35, color: '#f59e0b' }
+  const methodDonutData = methodDonut.length > 0 ? methodDonut : [
+    { name: 'UPI Direct Transfer', value: deposits.length || 0, color: '#10b981' }
   ];
 
   const columns = [
@@ -207,7 +211,7 @@ export default function DepositOperationsPage() {
         {/* Analytics: 14-Day Deposit Volume & Payment Method Share */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
           <ChartCard title="14-Day Deposit Inflow Trend" subtitle="Daily cash deposit volume across all methods" loading={loading}>
-            <AreaChartWidget data={depositTrendData} xKey="name" yKey="amount" color="#10b981" formatY={(v) => `₹${(v/1000).toFixed(0)}k`} />
+            <AreaChartWidget data={depositTrendData} xKey="name" yKey="amount" color="#10b981" formatY={(v) => v >= 1000 ? `₹${(v/1000).toFixed(1)}k` : `₹${v}`} />
           </ChartCard>
 
           <ChartCard title="Deposit Method Share" subtitle="UPI vs Bank Transfer vs QR Code" loading={loading}>

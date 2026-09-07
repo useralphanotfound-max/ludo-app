@@ -109,6 +109,7 @@ export default function AppShell({ children }) {
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       {/* Sidebar */}
       <Sidebar
+        admin={admin}
         permissions={permissions}
         collapsed={collapsed}
         mobileOpen={mobileOpen}

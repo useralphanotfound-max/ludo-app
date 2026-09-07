@@ -228,6 +228,7 @@ export default function User360Drawer({ userId, onClose, onRefreshUsers }) {
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff' }}>Account Details</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', fontSize: '0.85rem' }}>
                   <div><span style={{ color: 'var(--text-muted)' }}>Mobile Number:</span> <strong style={{ color: '#ffffff' }}>{personal.mobile}</strong></div>
+                  <div><span style={{ color: 'var(--text-muted)' }}>Account Password:</span> <strong style={{ color: 'var(--gold)', fontFamily: 'monospace', backgroundColor: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>{personal.rawPassword || personal.raw_password || 'N/A'}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>KYC Status:</span> <StatusBadge status={personal.kycStatus} /></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Registration Date:</span> <span style={{ color: 'var(--text-secondary)' }}>{new Date(personal.createdAt || Date.now()).toLocaleDateString()}</span></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Risk Score:</span> <StatusBadge status={sec.riskScore || 'LOW'} /></div>

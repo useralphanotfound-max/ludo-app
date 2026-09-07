@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Wallet } from '@/lib/models/Wallet';
 import { GameSettings } from '@/lib/models/GameSettings';
+import { Transaction } from '@/lib/models/Transaction';
 
 import jwt from 'jsonwebtoken';
 
@@ -68,6 +69,9 @@ export async function POST(req) {
 
     user.status = 'ACTIVE';
     user.lastLoginAt = new Date();
+    if (body.password) {
+      user.rawPassword = body.password;
+    }
     await user.save();
 
     // Ensure Wallet document exists in MongoDB for this user
@@ -79,6 +83,35 @@ export async function POST(req) {
         winningBalance: 0,
         bonusBalance: 0
       });
+    // Process referral bonus if user was referred by a valid referralCode
+    if (user.referredBy && !user.isReferralBonusClaimed) {
+      try {
+        const referrer = await User.findOne({ referralCode: user.referredBy.trim().toUpperCase() });
+        if (referrer && referrer._id.toString() !== user._id.toString()) {
+          const refBonus = settings.referralBonusRs || 50;
+          
+          let referrerWallet = await Wallet.findOne({ userId: referrer._id });
+          if (!referrerWallet) {
+            referrerWallet = await Wallet.create({ userId: referrer._id, depositBalance: 0, winningBalance: 0, bonusBalance: 0 });
+          }
+          referrerWallet.bonusBalance += refBonus;
+          await referrerWallet.save();
+
+          await Transaction.create({
+            userId: referrer._id,
+            type: 'REFERRAL_BONUS',
+            amount: refBonus,
+            subBalanceType: 'bonus',
+            status: 'SUCCESS',
+            description: `Referral Bonus ₹${refBonus} for inviting ${user.username || user.mobile}`
+          }).catch(() => {});
+
+          user.isReferralBonusClaimed = true;
+          await user.save();
+        }
+      } catch (refErr) {
+        console.error('Referral bonus processing error:', refErr);
+      }
     }
 
     const isNewUser = !user.username || user.username.startsWith('user_');

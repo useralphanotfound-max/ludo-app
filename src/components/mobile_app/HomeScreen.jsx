@@ -92,7 +92,24 @@ export default function HomeScreen({
     }
   };
 
-  // Deposit confirm submit
+  const [depositProofImage, setDepositProofImage] = useState(null);
+  const [depositProofFile, setDepositProofFile] = useState(null);
+  const [depositProofPreview, setDepositProofPreview] = useState(null);
+
+  const handleScreenshotChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDepositProofFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDepositProofImage(reader.result);
+        setDepositProofPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Deposit confirm submit via FormData (multipart/form-data)
   const handleDepositSubmit = async (e) => {
     e.preventDefault();
     setSubmittingDeposit(true);
@@ -100,17 +117,31 @@ export default function HomeScreen({
     setActionSuccess('');
 
     try {
-      const res = await authFetch('/api/wallet/deposit/confirm', {
+      const formData = new FormData();
+      formData.append('amount', depositAmount);
+      formData.append('utr_number', utrNumber.trim());
+      if (depositProofFile) {
+        formData.append('proof_image', depositProofFile);
+      } else if (depositProofImage) {
+        formData.append('proof_image_url', depositProofImage);
+      }
+
+      const headers = {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      const res = await fetch('/api/wallet/deposit/confirm', {
         method: 'POST',
-        body: JSON.stringify({
-          amount: Number(depositAmount),
-          utr_number: utrNumber.trim()
-        })
+        headers,
+        body: formData
       });
       const data = await res.json();
       if (data.success) {
-        setActionSuccess(data.message || `₹${depositAmount} credited to your wallet!`);
+        setActionSuccess(data.message || `Deposit request of ₹${depositAmount} submitted successfully!`);
         setUtrNumber('');
+        setDepositProofFile(null);
+        setDepositProofImage(null);
+        setDepositProofPreview(null);
         if (onRefreshData) onRefreshData();
       } else {
         setActionError(data.error?.message || 'Failed to submit deposit');
@@ -606,12 +637,27 @@ export default function HomeScreen({
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Upload Payment Screenshot</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleScreenshotChange}
+                      className="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-900/50 file:text-purple-300 hover:file:bg-purple-900 bg-[#0a0d17] border border-slate-700 rounded-xl cursor-pointer"
+                    />
+                    {depositProofPreview && (
+                      <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-yellow-400/50">
+                        <img src={depositProofPreview} alt="Screenshot Proof" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
                     disabled={submittingDeposit || !utrNumber}
                     className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg hover:scale-105 disabled:opacity-50 transition-all"
                   >
-                    {submittingDeposit ? 'Verifying UTR...' : 'Submit UTR & Credit Wallet'}
+                    {submittingDeposit ? 'Submitting Request...' : 'Submit UTR & Deposit Request'}
                   </button>
                 </form>
               </div>

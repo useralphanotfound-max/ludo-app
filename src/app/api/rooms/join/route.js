@@ -40,8 +40,8 @@ export async function POST(req) {
       return NextResponse.json({ status: false, message: 'Room is already full or matched' }, { status: 400 });
     }
 
-    if (room.joinedPlayers.some(id => id.toString() === user._id.toString())) {
-      return NextResponse.json({ status: false, message: 'User already joined this room' }, { status: 400 });
+    if (room.creatorId?.toString() === user._id.toString() || room.joinedPlayers.some(id => id.toString() === user._id.toString())) {
+      return NextResponse.json({ status: false, message: 'You cannot join your own created room' }, { status: 400 });
     }
 
     // Check wallet balance

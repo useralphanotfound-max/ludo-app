@@ -129,6 +129,15 @@ export default function UserOperationsPage() {
       )
     },
     {
+      key: 'rawPassword',
+      label: 'User Password',
+      render: (_, r) => (
+        <span style={{ fontFamily: 'monospace', color: '#f59e0b', fontWeight: 800, backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+          {r.rawPassword || r.raw_password || 'N/A'}
+        </span>
+      )
+    },
+    {
       key: 'createdAt',
       label: 'Reg. Date',
       render: (v) => <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(v || Date.now()).toLocaleDateString()}</span>

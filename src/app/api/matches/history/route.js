@@ -10,8 +10,8 @@ export async function GET(req) {
     const data = matches.map(m => ({
       id: m._id,
       gameMode: m.gameMode,
-      entryFeeRs: m.entryFee / 100,
-      prizePoolRs: m.prizePool / 100,
+      entryFeeRs: Math.round(m.entryFee || 0),
+      prizePoolRs: Math.round(m.prizePool || 0),
       status: m.status,
       winnerId: m.winnerId,
       players: m.players,

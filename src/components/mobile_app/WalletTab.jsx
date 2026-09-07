@@ -14,24 +14,30 @@ export default function WalletTab({
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
   useEffect(() => {
-    if (token) {
-      fetch('/api/wallet/transactions?limit=10', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.data?.transactions) {
-            setTransactions(data.data.transactions);
-          }
+    const fetchTxns = () => {
+      if (token) {
+        fetch('/api/wallet/transactions?limit=10&t=' + Date.now(), {
+          headers: { 'Authorization': `Bearer ${token}` }
         })
-        .catch(console.error);
-    }
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.data?.transactions) {
+              setTransactions(data.data.transactions);
+            }
+          })
+          .catch(console.error);
+      }
+    };
+
+    fetchTxns();
+    const interval = setInterval(fetchTxns, 2000);
+    return () => clearInterval(interval);
   }, [token]);
 
-  const totalBalance = wallet?.total_balance ?? wallet?.balance ?? 2500;
-  const withdrawalBalance = wallet?.withdrawal_balance ?? wallet?.winning_balance ?? 1850;
-  const bonusBalance = wallet?.bonus_balance ?? 450;
-  const pendingBalance = wallet?.pending_balance ?? 200;
+  const totalBalance = wallet?.total_balance ?? wallet?.totalBalanceRs ?? wallet?.balance ?? 0;
+  const withdrawalBalance = wallet?.withdrawal_balance ?? wallet?.winning_balance ?? wallet?.winningBalance ?? 0;
+  const bonusBalance = wallet?.bonus_balance ?? wallet?.bonusBalance ?? 0;
+  const pendingBalance = wallet?.pending_balance ?? wallet?.pendingBalance ?? 0;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#070913] text-white p-4 pb-24 relative overflow-y-auto">
@@ -115,65 +121,18 @@ export default function WalletTab({
 
         <div className="space-y-2">
           {transactions.length === 0 ? (
-            /* Mock default list matching Image 3 */
-            <>
-              <div className="bg-[#121623] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-white block leading-tight">Match Win</span>
-                    <span className="text-[10px] text-slate-500 font-medium">24 Oct, 11:45 AM</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-black text-emerald-400 block">+₹180.00</span>
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">SUCCESS</span>
-                </div>
-              </div>
-
-              <div className="bg-[#121623] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-white block leading-tight">Match Entry</span>
-                    <span className="text-[10px] text-slate-500 font-medium">24 Oct, 11:15 AM</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-black text-slate-300 block">-₹100.00</span>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">DEBITED</span>
-                </div>
-              </div>
-
-              <div className="bg-[#121623] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                    <Landmark className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-white block leading-tight">Deposit</span>
-                    <span className="text-[10px] text-slate-500 font-medium">23 Oct, 09:30 PM</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-black text-emerald-400 block">+₹500.00</span>
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">SUCCESS</span>
-                </div>
-              </div>
-            </>
+            <div className="bg-[#121623] border border-slate-800/80 rounded-2xl p-8 text-center text-slate-400 text-xs font-semibold">
+              No recent transactions found
+            </div>
           ) : (
             transactions.map((t) => (
               <div key={t.id} className="bg-[#121623] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-bold text-white block">{t.title}</span>
-                  <span className="text-[10px] text-slate-500">{new Date(t.created_at).toLocaleString()}</span>
+                  <span className="text-sm font-bold text-white block">{t.title || t.type}</span>
+                  <span className="text-[10px] text-slate-500">{new Date(t.created_at || t.createdAt).toLocaleString()}</span>
                 </div>
-                <span className={`text-sm font-black ${t.is_credit ? 'text-emerald-400' : 'text-slate-300'}`}>
-                  {t.is_credit ? '+' : '-'}₹{t.amount?.toFixed(2)}
+                <span className={`text-sm font-black ${t.is_credit || t.type === 'DEPOSIT' || t.type === 'MATCH_WIN' ? 'text-emerald-400' : 'text-slate-300'}`}>
+                  {t.is_credit || t.type === 'DEPOSIT' || t.type === 'MATCH_WIN' ? '+' : '-'}₹{Number(t.amount || 0).toFixed(2)}
                 </span>
               </div>
             ))

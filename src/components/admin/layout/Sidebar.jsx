@@ -25,7 +25,9 @@ import {
   Shield,
   KeyRound,
   UserCheck,
-  ChevronRight
+  Globe,
+  ChevronRight,
+  User
 } from 'lucide-react';
 import { getRolePermissions, sanitizePermissions, canAccessModule } from '@/lib/rbac';
 
@@ -47,6 +49,7 @@ const iconMap = {
   roles: KeyRound,
   logs: FileText,
   settings: Settings,
+  'master-web-settings': Globe,
   monitoring: Activity
 };
 
@@ -95,13 +98,15 @@ const NAVIGATION_GROUPS = [
     title: 'SYSTEM SETTINGS',
     items: [
       { id: 'notifications', label: 'Notifications', path: '/admin/notifications', permission: 'notifications' },
-      { id: 'settings', label: 'Settings', path: '/admin/settings', permission: 'settings' },
-      { id: 'monitoring', label: 'Server Status', path: '/admin/monitoring', permission: 'monitoring' }
+      { id: 'settings', label: 'Global Settings', path: '/admin/settings', permission: 'settings' },
+      { id: 'master-web-settings', label: 'Web Master Switch', path: '/admin/master-web-settings', permission: 'settings' },
+      { id: 'monitoring', label: 'Server Monitoring', path: '/admin/monitoring', permission: 'monitoring' }
     ]
   }
 ];
 
 export default function Sidebar({
+  admin,
   permissions,
   collapsed,
   mobileOpen,
@@ -118,52 +123,35 @@ export default function Sidebar({
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 45
-          }}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-40 transition-opacity"
         />
       )}
 
       <aside
-        className={`sidebar-aside ${mobileOpen ? 'mobile-open' : ''}`}
+        className={`sidebar-aside ${mobileOpen ? 'mobile-open' : ''} flex flex-col h-screen sticky top-0 z-50 bg-[#0c0f1d] border-r border-slate-800/80 shadow-2xl transition-all duration-300 overflow-hidden selection:bg-emerald-500 selection:text-slate-950`}
         style={{
-          width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)',
-          backgroundColor: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          overflow: 'hidden'
+          width: collapsed ? 'var(--sidebar-collapsed, 80px)' : 'var(--sidebar-expanded, 270px)',
         }}
       >
         {/* Brand Header */}
         <div
-          style={{
-            padding: collapsed ? '1.25rem 0.5rem' : '1.25rem 1.25rem',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'space-between'
-          }}
+          className={`flex items-center justify-between border-b border-slate-800/80 bg-[#090b16] ${
+            collapsed ? 'p-3 justify-center' : 'px-5 py-4'
+          }`}
         >
-          <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
-            <div className="emerald-shield-glow">
-              <Shield size={20} />
+          <Link href="/admin" className="flex items-center gap-3 group text-decoration-none">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 p-0.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-[#0c0f1d] rounded-[14px] flex items-center justify-center">
+                <Shield className="w-5 h-5 text-emerald-400" />
+              </div>
             </div>
+
             {!collapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+              <div className="flex flex-col">
+                <span className="text-base font-black text-white tracking-tight leading-none group-hover:text-emerald-400 transition-colors">
                   Royal Ludo
                 </span>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--emerald-light)', letterSpacing: '0.12em', marginTop: '2px' }}>
+                <span className="text-[10px] font-extrabold text-emerald-400 tracking-widest uppercase mt-1">
                   ADMIN OS
                 </span>
               </div>
@@ -173,15 +161,15 @@ export default function Sidebar({
           {setMobileOpen && !collapsed && (
             <button
               onClick={() => setMobileOpen(false)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/50 transition-colors"
             >
-              <X size={18} />
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        {/* Grouped Nav List */}
-        <nav style={{ flex: 1, padding: collapsed ? '1rem 0.375rem' : '1rem 0.75rem', overflowY: 'auto' }}>
+        {/* Grouped Navigation List with Custom Smooth Scroll */}
+        <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto custom-scrollbar">
           {NAVIGATION_GROUPS.map((group) => {
             const accessibleItems = group.items.filter((item) => {
               if (item.id === 'dashboard') return true;
@@ -191,25 +179,18 @@ export default function Sidebar({
             if (accessibleItems.length === 0) return null;
 
             return (
-              <div key={group.title} style={{ marginBottom: '1.25rem' }}>
+              <div key={group.title} className="space-y-1">
                 {!collapsed && (
-                  <div
-                    style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      color: 'var(--text-muted)',
-                      letterSpacing: '0.1em',
-                      padding: '0.25rem 0.75rem',
-                      marginBottom: '0.375rem'
-                    }}
-                  >
+                  <div className="px-3 pb-1.5 text-[10px] font-extrabold text-slate-500 tracking-wider uppercase">
                     {group.title}
                   </div>
                 )}
 
                 {accessibleItems.map((item) => {
                   const Icon = iconMap[item.id] || LayoutDashboard;
-                  const isActive = pathname === item.path || (item.path !== '/admin' && pathname.startsWith(item.path));
+                  const isActive =
+                    pathname === item.path ||
+                    (item.path !== '/admin' && pathname.startsWith(item.path));
                   const count = item.badgeKey ? pendingCounts[item.badgeKey] : null;
 
                   return (
@@ -218,37 +199,34 @@ export default function Sidebar({
                       href={item.path}
                       onClick={() => setMobileOpen && setMobileOpen(false)}
                       title={collapsed ? item.label : undefined}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: collapsed ? 'center' : 'space-between',
-                        padding: collapsed ? '0.75rem' : '0.65rem 0.75rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: isActive ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid transparent',
-                        backgroundColor: isActive ? 'var(--emerald-bg)' : 'transparent',
-                        color: isActive ? 'var(--emerald-light)' : 'var(--text-secondary)',
-                        fontWeight: isActive ? 700 : 500,
-                        textDecoration: 'none',
-                        marginBottom: '0.25rem',
-                        transition: 'all 0.15s ease'
-                      }}
+                      className={`group relative flex items-center justify-between rounded-2xl transition-all duration-200 ${
+                        collapsed ? 'p-3 justify-center' : 'px-3.5 py-3'
+                      } ${
+                        isActive
+                          ? 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent text-emerald-300 font-extrabold border-l-4 border-emerald-400 shadow-sm shadow-emerald-500/10'
+                          : 'text-slate-400 font-medium hover:text-slate-200 hover:bg-slate-800/40 border-l-4 border-transparent'
+                      }`}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Icon size={18} color={isActive ? 'var(--emerald-light)' : 'var(--text-muted)'} />
-                        {!collapsed && <span style={{ fontSize: '0.85rem' }}>{item.label}</span>}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Icon
+                          className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${
+                            isActive ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'text-slate-400 group-hover:text-slate-200'
+                          }`}
+                        />
+                        {!collapsed && (
+                          <span className="text-xs tracking-wide truncate">{item.label}</span>
+                        )}
                       </div>
 
                       {!collapsed && count ? (
                         <span
-                          style={{
-                            fontSize: '0.65rem',
-                            fontWeight: 800,
-                            padding: '0.15rem 0.45rem',
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: item.badgeColor === 'rose' ? 'rgba(244, 63, 94, 0.2)' : item.badgeColor === 'gold' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                            color: item.badgeColor === 'rose' ? 'var(--rose)' : item.badgeColor === 'gold' ? 'var(--gold)' : 'var(--emerald-light)'
-                          }}
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+                            item.badgeColor === 'rose'
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              : item.badgeColor === 'gold'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          }`}
                         >
                           {count}
                         </span>
@@ -261,30 +239,41 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Footer / Logout */}
-        <div style={{ padding: collapsed ? '0.5rem' : '0.875rem', borderTop: '1px solid var(--border)', backgroundColor: 'var(--bg-void)' }}>
-          <button
-            onClick={onLogout}
-            title={collapsed ? 'Sign Out' : undefined}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              padding: '0.625rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              color: 'var(--text-muted)',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              cursor: 'pointer'
-            }}
-          >
-            <LogOut size={16} />
-            {!collapsed && <span>Sign Out</span>}
-          </button>
+        {/* Footer Admin Profile Card */}
+        <div className="p-3 border-t border-slate-800/80 bg-[#090b16] mt-auto">
+          {!collapsed ? (
+            <div className="flex items-center justify-between p-2 rounded-2xl bg-slate-900/60 border border-slate-800/60">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-md">
+                  {admin?.email?.charAt(0).toUpperCase() || 'A'}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-white truncate leading-tight">
+                    {admin?.email || 'admin@royalludo.com'}
+                  </span>
+                  <span className="text-[9px] font-extrabold text-amber-400 uppercase tracking-wider mt-0.5">
+                    {admin?.role || 'SUPERADMIN'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={onLogout}
+                title="Sign Out"
+                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onLogout}
+              title="Sign Out"
+              className="w-full p-3 flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-2xl transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </aside>
     </>

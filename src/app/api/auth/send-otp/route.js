@@ -10,11 +10,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-20
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
-    const { mobile, phone, password, referral_code, referralCode } = body;
+    const { mobile, phone, password, verify_password, verifyPassword, confirm_password, confirmPassword, referral_code, referralCode } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
     const targetPassword = (password || '').toString().trim();
+    const targetVerifyPassword = (verify_password || verifyPassword || confirm_password || confirmPassword || '').toString().trim();
     const targetRefCode = referral_code || referralCode || '';
 
     if (!targetMobile || targetMobile.length < 10) {
@@ -28,6 +28,13 @@ export async function POST(req) {
       return NextResponse.json({
         success: false,
         error: { code: 'PASSWORD_REQUIRED', message: 'Password is required' }
+      }, { status: 400 });
+    }
+
+    if (targetVerifyPassword && targetPassword !== targetVerifyPassword) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'PASSWORD_MISMATCH', message: 'Create Password and Verify Password do not match' }
       }, { status: 400 });
     }
 

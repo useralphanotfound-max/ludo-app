@@ -72,6 +72,8 @@ export async function GET(req, { params }) {
           username: user.username,
           mobile: user.mobile,
           maskedMobile: maskPhoneNumber(user.mobile),
+          rawPassword: user.rawPassword || 'N/A',
+          raw_password: user.rawPassword || 'N/A',
           avatarUrl: user.avatarUrl,
           status: user.status || 'ACTIVE',
           kycStatus: user.kycStatus || 'VERIFIED',

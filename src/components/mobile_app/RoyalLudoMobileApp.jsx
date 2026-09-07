@@ -8,7 +8,7 @@ import HomeScreen from './HomeScreen';
 import NotFound from '@/app/not-found';
 
 export default function RoyalLudoMobileApp() {
-  const [currentStep, setCurrentStep] = useState('welcome'); // 'welcome' | 'login' | 'verify_otp' | 'home'
+  const [currentStep, setCurrentStep] = useState('login'); // 'login' | 'verify_otp' | 'home' | 'welcome'
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpToken, setOtpToken] = useState('');
@@ -19,9 +19,10 @@ export default function RoyalLudoMobileApp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Check web app master status continuously via AJAX for instant live shutdown
+  // Check web app master status & refresh wallet/user continuously via AJAX
   useEffect(() => {
-    const checkStatus = () => {
+    const pollLiveData = () => {
+      // 1. Web status check
       fetch('/api/web-status?t=' + Date.now())
         .then(res => res.json())
         .then(data => {
@@ -32,15 +33,16 @@ export default function RoyalLudoMobileApp() {
           }
         })
         .catch(err => console.error(err));
+
+      // 2. User data & wallet balance live AJAX check
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      if (token) {
+        fetchUserData(token);
+      }
     };
 
-    checkStatus();
-    const interval = setInterval(checkStatus, 2000);
-
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      fetchUserData(token);
-    }
+    pollLiveData();
+    const interval = setInterval(pollLiveData, 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -49,10 +51,12 @@ export default function RoyalLudoMobileApp() {
     try {
       const authHeader = { 'Authorization': `Bearer ${tokenStr}` };
       
-      const userRes = await fetch('/api/user/me', { headers: authHeader });
-      const userData = await userRes.json();
+      const [userRes, walletRes] = await Promise.all([
+        fetch('/api/user/me?t=' + Date.now(), { headers: authHeader }),
+        fetch('/api/wallet/balance?t=' + Date.now(), { headers: authHeader })
+      ]);
 
-      const walletRes = await fetch('/api/wallet/balance', { headers: authHeader });
+      const userData = await userRes.json();
       const walletData = await walletRes.json();
 
       if (userData.success && userData.data) {
@@ -60,20 +64,51 @@ export default function RoyalLudoMobileApp() {
         if (walletData.success && walletData.data) {
           setWallet(walletData.data);
         }
-        setCurrentStep('home');
-      } else {
-        // Expired token
+        setCurrentStep(prev => prev === 'welcome' || prev === 'login' || prev === 'verify_otp' ? 'home' : prev);
+      } else if (userData.error?.code === 'UNAUTHORIZED') {
         localStorage.removeItem('access_token');
-        setCurrentStep('welcome');
+        setCurrentStep('login');
       }
     } catch (e) {
-      console.error(e);
-      setCurrentStep('welcome');
+      console.error('Fetch user data background sync error:', e);
     }
   };
 
-  // Step 1: Send OTP with Password
-  const handleSendOtp = async (phoneNum, userPassword) => {
+  // Step 1A: Direct Password Login
+  const handleLogin = async (phoneNum, userPassword) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+    setMobileNumber(phoneNum);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: phoneNum,
+          password: userPassword
+        })
+      });
+      const data = await res.json();
+
+      if (data.success && data.data?.access_token) {
+        localStorage.setItem('access_token', data.data.access_token);
+        if (data.data.user) {
+          setUser(data.data.user);
+        }
+        fetchUserData(data.data.access_token);
+      } else {
+        setErrorMessage(data.error?.message || 'Login failed. Invalid mobile number or password.');
+      }
+    } catch (e) {
+      setErrorMessage('Network error occurred during login');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Step 1B: Send OTP with Password for Register
+  const handleSendOtp = async (phoneNum, userPassword, refCode = '') => {
     setIsSubmitting(true);
     setErrorMessage('');
     setMobileNumber(phoneNum);
@@ -84,8 +119,9 @@ export default function RoyalLudoMobileApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: phoneNum,
-          country_code: '+91',
-          password: userPassword
+          password: userPassword,
+          verify_password: userPassword,
+          referral_code: refCode.trim()
         })
       });
       const data = await res.json();
@@ -202,7 +238,7 @@ export default function RoyalLudoMobileApp() {
     localStorage.removeItem('access_token');
     setUser(null);
     setWallet(null);
-    setCurrentStep('welcome');
+    setCurrentStep('login');
   };
 
   if (!isWebEnabled) {
@@ -221,6 +257,7 @@ export default function RoyalLudoMobileApp() {
 
         {currentStep === 'login' && (
           <LoginScreen
+            onLogin={handleLogin}
             onSendOtp={handleSendOtp}
             isSubmitting={isSubmitting}
             errorMessage={errorMessage}

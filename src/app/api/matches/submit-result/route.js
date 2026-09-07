@@ -11,8 +11,31 @@ import { getAuthUser } from '@/lib/authHelper';
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
-    const { matchId, claimedResult, screenshotUrl, opponentClaimedResult, userId: bodyUserId } = body;
+    let body = {};
+    let uploadedScreenshot = null;
+
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      for (const [key, value] of formData.entries()) {
+        if (value && typeof value === 'object' && value.name) {
+          const buffer = Buffer.from(await value.arrayBuffer());
+          const base64 = buffer.toString('base64');
+          const mimeType = value.type || 'image/png';
+          uploadedScreenshot = `data:${mimeType};base64,${base64}`;
+        } else {
+          body[key] = value;
+        }
+      }
+    } else {
+      body = await req.json().catch(() => ({}));
+    }
+
+    const matchId = body.matchId || body.match_id;
+    const claimedResult = body.claimedResult || body.claimed_result;
+    const screenshotUrl = uploadedScreenshot || body.screenshotUrl || body.screenshot_url || body.screenshot;
+    const opponentClaimedResult = body.opponentClaimedResult || body.opponent_claimed_result;
+    const bodyUserId = body.userId || body.user_id;
 
     if (!matchId || !claimedResult) {
       return NextResponse.json({ status: false, message: 'Match ID and claimed result (WON/LOST) required' }, { status: 400 });
@@ -124,19 +147,19 @@ export async function POST(req) {
           amount: match.prizePool,
           subBalanceType: 'winning',
           status: 'SUCCESS',
-          description: `Match Victory! Prize Pool ₹${Math.round(match.prizePool / 100)} credited.`
+          description: `Match Victory! Prize Pool ₹${Math.round(match.prizePool)} credited.`
         }).catch(() => {});
       }
 
       return NextResponse.json({
         status: true,
-        message: `Match auto-completed! ${winnerUsername} declared winner and awarded ₹${Math.round(match.prizePool / 100)}. No dispute review needed.`,
+        message: `Match auto-completed! ${winnerUsername} declared winner and awarded ₹${Math.round(match.prizePool)}. No dispute review needed.`,
         data: {
           autoResolved: true,
           status: 'COMPLETED',
           winnerUsername,
           winnerId: winnerUserId,
-          prizePoolRs: Math.round(match.prizePool / 100)
+          prizePoolRs: Math.round(match.prizePool)
         }
       });
     }
