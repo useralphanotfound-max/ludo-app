@@ -99,7 +99,6 @@ const NAVIGATION_GROUPS = [
     items: [
       { id: 'notifications', label: 'Notifications', path: '/admin/notifications', permission: 'notifications' },
       { id: 'settings', label: 'Global Settings', path: '/admin/settings', permission: 'settings' },
-      { id: 'master-web-settings', label: 'Web Master Switch', path: '/admin/master-web-settings', permission: 'settings' },
       { id: 'monitoring', label: 'Server Monitoring', path: '/admin/monitoring', permission: 'monitoring' }
     ]
   }
