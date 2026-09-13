@@ -11,10 +11,12 @@ export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { mobile, phone, password } = body;
+    const { mobile, phone, password, fcm_token, fcmToken, device_id, deviceId, platform, deviceType } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
     const targetPassword = (password || '').toString().trim();
+    const targetFcmToken = fcm_token || fcmToken || '';
+    const targetDeviceId = device_id || deviceId || '';
 
     if (!targetMobile || !targetPassword) {
       return NextResponse.json({
@@ -51,6 +53,11 @@ export async function POST(req) {
       user.status = 'ACTIVE';
     }
 
+    if (targetFcmToken) user.fcmToken = targetFcmToken;
+    if (targetDeviceId) user.deviceId = targetDeviceId;
+    if (platform || deviceType) user.deviceType = platform || deviceType;
+    user.lastLoginAt = new Date();
+
     // Ensure rawPassword is set if missing
     if (!user.rawPassword) {
       user.rawPassword = targetPassword;
@@ -82,6 +89,7 @@ export async function POST(req) {
           id: user._id.toString(),
           username: user.username,
           mobile: user.mobile,
+          avatar_id: user.avatarId || 'av1',
           avatar_url: user.avatarUrl,
           role: user.role,
           balance: wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance,

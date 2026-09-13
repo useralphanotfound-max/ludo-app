@@ -3,23 +3,18 @@ import { connectDB } from '@/lib/db';
 import { Transaction } from '@/lib/models/Transaction';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
+import { getAuthUser } from '@/lib/authHelper';
 
-function getUserFromToken(req) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '').trim();
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    return null;
-  }
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
 
 export async function GET(req) {
   try {
     await connectDB();
-    const userPayload = getUserFromToken(req);
+    let userPayload = null;
+    const authUser = await getAuthUser(req);
+    if (authUser) {
+      userPayload = { userId: authUser._id.toString() };
+    }
     if (!userPayload) {
       return NextResponse.json({
         success: false,
@@ -29,16 +24,16 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 50);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
     const typeFilter = searchParams.get('type') || 'all';
 
     const query = { userId: userPayload.userId };
     if (typeFilter !== 'all') {
-      const upper = typeFilter.toUpperCase();
+      const upper = typeFilter.toUpperCase().trim();
       if (upper === 'DEPOSIT') query.type = 'DEPOSIT';
-      else if (upper === 'WITHDRAW') query.type = 'WITHDRAWAL';
-      else if (upper === 'WIN') query.type = 'MATCH_WIN';
-      else if (upper === 'ENTRY') query.type = 'MATCH_ENTRY';
+      else if (['WITHDRAW', 'WITHDRAWAL'].includes(upper)) query.type = 'WITHDRAWAL';
+      else if (['WIN', 'MATCH_WIN'].includes(upper)) query.type = 'MATCH_WIN';
+      else if (['ENTRY', 'ENTRY_FEE', 'MATCH_ENTRY'].includes(upper)) query.type = 'MATCH_ENTRY';
       else if (upper === 'REFUND') query.type = 'REFUND';
       else if (upper === 'BONUS') query.type = 'BONUS_CREDIT';
     }

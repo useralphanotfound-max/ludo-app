@@ -40,13 +40,21 @@ export async function GET(req) {
       data: {
         id: user._id,
         phone: user.mobile,
+        mobile: user.mobile,
         username: user.username,
         avatar_id: user.avatarId || 'av1',
         avatar_url: user.avatarUrl || 'https://cdn.royalludo.com/avatars/av1.png',
         balance: totalBalance,
+        total_balance: totalBalance,
+        winning_balance: wallet.winningBalance || 0,
+        deposit_balance: wallet.depositBalance || 0,
         withdrawal_balance: wallet.winningBalance || 0,
         bonus_balance: wallet.bonusBalance || 0,
         pending_balance: wallet.pendingBalance || 0,
+        total_played: gamesPlayed,
+        total_matches_played: gamesPlayed,
+        total_wins: wins,
+        win_percentage: winRate,
         level: user.level || 1,
         stats: {
           games_played: gamesPlayed,
@@ -56,6 +64,7 @@ export async function GET(req) {
         },
         referral_code: user.referralCode,
         is_kyc_verified: user.kycStatus === 'VERIFIED',
+        kyc_status: user.kycStatus || 'NONE',
         created_at: user.createdAt
       }
     }, { status: 200 });

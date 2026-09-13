@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 const disputeSchema = new mongoose.Schema({
   matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match', required: true, index: true },
   roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', index: true },
+  reportingUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  reason: { type: String, default: '' },
   player1: {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     username: { type: String },

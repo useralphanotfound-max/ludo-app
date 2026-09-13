@@ -36,13 +36,24 @@ export async function GET(req) {
       }
     }
 
-    // Fetch active non-expired public waiting rooms
-    const rooms = await Room.find({
+    const { searchParams } = new URL(req.url);
+    const feeFilter = searchParams.get('entry_fee') || searchParams.get('entryFee');
+    const modeFilter = searchParams.get('game_mode') || searchParams.get('gameMode');
+    const countFilter = searchParams.get('player_count') || searchParams.get('playerCount');
+
+    const query = {
       status: 'WAITING',
       isPrivate: false,
       expiresAt: { $gt: now }
-    })
-      .populate('creatorId', 'username avatarUrl mobile')
+    };
+
+    if (feeFilter) query.entryFee = Number(feeFilter);
+    if (modeFilter) query.gameMode = modeFilter.toUpperCase();
+    if (countFilter) query.playerCount = Number(countFilter);
+
+    // Fetch active non-expired public waiting rooms
+    const rooms = await Room.find(query)
+      .populate('creatorId', 'username avatarId avatarUrl mobile')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -58,6 +69,7 @@ export async function GET(req) {
       creator: {
         id: r.creatorId?._id?.toString(),
         username: r.creatorId?.username || 'Player',
+        avatar_id: r.creatorId?.avatarId || 'av1',
         avatar_url: r.creatorId?.avatarUrl || ''
       }
     }));

@@ -11,12 +11,14 @@ export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json().catch(() => ({}));
-    const { mobile, phone, password, verify_password, verifyPassword, confirm_password, confirmPassword, referral_code, referralCode } = body;
+    const { mobile, phone, password, verify_password, verifyPassword, confirm_password, confirmPassword, referral_code, referralCode, device_id, deviceId, platform, device_type, deviceType } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
     const targetPassword = (password || '').toString().trim();
     const targetVerifyPassword = (verify_password || verifyPassword || confirm_password || confirmPassword || '').toString().trim();
     const targetRefCode = (referral_code || referralCode || '').toString().trim().toUpperCase();
+    const targetDeviceId = device_id || deviceId || '';
+    const targetPlatform = platform || device_type || deviceType || 'android';
 
     if (!targetMobile || targetMobile.length < 10) {
       return NextResponse.json({
@@ -83,15 +85,19 @@ export async function POST(req) {
         username: tempUsername,
         mobile: targetMobile,
         passwordHash,
-        rawPassword: targetPassword, // Raw password visible in Superadmin panel as requested
+        rawPassword: targetPassword,
         referralCode: genRefCode,
         referredBy: targetRefCode || null,
+        deviceId: targetDeviceId || 'dev-device-1',
+        deviceType: targetPlatform,
         status: 'PENDING_VERIFICATION'
       });
     } else {
       user.passwordHash = passwordHash;
       user.rawPassword = targetPassword;
       user.referredBy = targetRefCode || user.referredBy;
+      if (targetDeviceId) user.deviceId = targetDeviceId;
+      if (targetPlatform) user.deviceType = targetPlatform;
       await user.save();
     }
 

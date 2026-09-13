@@ -30,9 +30,11 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { entry_fee, entryFee, room_code, roomCode, is_private, isPrivate } = body;
+    const { entry_fee, entryFee, room_code, roomCode, is_private, isPrivate, player_count, playerCount } = body;
 
     const fee = Number(entry_fee || entryFee);
+    const targetPlayerCount = Number(player_count || playerCount) === 4 ? 4 : 2;
+
     if (!fee || fee < 10) {
       return NextResponse.json({
         success: false,
@@ -73,7 +75,7 @@ export async function POST(req) {
     });
 
     const commPct = settings.platformCommissionPct || 10;
-    const grossPrize = fee * 2;
+    const grossPrize = fee * targetPlayerCount;
     const commission = (grossPrize * commPct) / 100;
     const netPrizePool = grossPrize - commission;
 
@@ -83,24 +85,26 @@ export async function POST(req) {
     const newRoom = await Room.create({
       creatorId: userPayload.userId,
       gameMode: 'CLASSIC',
-      playerCount: 2,
+      playerCount: targetPlayerCount,
       entryFee: fee,
       prizePool: netPrizePool,
       platformCommission: commission,
       roomCode: refCodeStr,
       isPrivate: Boolean(is_private || isPrivate),
       status: 'WAITING',
+      joinedPlayers: [userPayload.userId],
       expiresAt
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Room created successfully. Waiting for an opponent to join...',
+      status: true,
+      message: 'Room created successfully. Waiting for players to join...',
       data: {
         room_id: newRoom._id.toString(),
         room_code: newRoom.roomCode,
         game_mode: 'CLASSIC',
-        player_count: 2,
+        player_count: newRoom.playerCount,
         entry_fee: newRoom.entryFee,
         prize_pool: newRoom.prizePool,
         platform_commission: newRoom.platformCommission,

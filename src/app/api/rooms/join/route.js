@@ -10,7 +10,7 @@ export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { roomCode, roomId, userId: bodyUserId } = body;
+    const { room_code, roomCode, room_id, roomId, userId: bodyUserId } = body;
 
     let user = null;
     if (bodyUserId) {
@@ -20,20 +20,20 @@ export async function POST(req) {
       user = await getAuthUser(req);
     }
     if (!user) {
-      user = await User.findOne({ role: 'USER', status: 'ACTIVE' });
-    }
-    if (!user) {
-      return NextResponse.json({ status: false, message: 'User unauthorized or not found' }, { status: 401 });
+      return NextResponse.json({ success: false, status: false, error: { code: 'UNAUTHORIZED', message: 'User unauthorized' } }, { status: 401 });
     }
 
+    const targetCode = room_code || roomCode;
+    const targetId = room_id || roomId;
+
     let query = {};
-    if (roomCode) query.roomCode = roomCode;
-    else if (roomId) query._id = roomId;
+    if (targetCode) query.roomCode = targetCode.toString().trim();
+    else if (targetId) query._id = targetId;
     else query.status = 'WAITING';
 
     const room = await Room.findOne(query);
     if (!room) {
-      return NextResponse.json({ status: false, message: 'Room not found or no waiting rooms available' }, { status: 404 });
+      return NextResponse.json({ success: false, status: false, error: { code: 'ROOM_NOT_FOUND', message: 'Room not found or no waiting rooms available' } }, { status: 404 });
     }
 
     if (room.status !== 'WAITING') {
@@ -65,6 +65,9 @@ export async function POST(req) {
     await wallet.save();
 
     room.joinedPlayers.push(user._id);
+    if (!room.opponentId && room.creatorId.toString() !== user._id.toString()) {
+      room.opponentId = user._id;
+    }
 
     // If full, start match
     let match = null;
@@ -72,7 +75,9 @@ export async function POST(req) {
       room.status = 'IN_PROGRESS';
       
       const allPlayers = await User.find({ _id: { $in: room.joinedPlayers } }).lean();
-      const prizePool = Math.round(room.entryFee * room.playerCount * 0.9); // 10% platform fee cut
+      const commPct = 10;
+      const grossPrize = room.entryFee * room.playerCount;
+      const prizePool = grossPrize - ((grossPrize * commPct) / 100);
 
       match = await Match.create({
         roomId: room._id,
@@ -87,21 +92,27 @@ export async function POST(req) {
         status: 'ACTIVE',
         startedAt: new Date()
       });
+    } else {
+      room.status = 'JOINED';
     }
 
     await room.save();
 
     return NextResponse.json({
+      success: true,
       status: true,
-      message: room.status === 'IN_PROGRESS' ? 'Match started! All 2 players matched.' : 'Joined room successfully.',
+      message: room.status === 'IN_PROGRESS' ? `Match started! All ${room.playerCount} players matched.` : 'Joined room successfully.',
       data: {
-        roomId: room._id,
+        room_id: room._id.toString(),
+        roomId: room._id.toString(),
+        room_code: room.roomCode,
         roomCode: room.roomCode,
         status: room.status,
-        joinedPlayersCount: room.joinedPlayers.length,
-        matchId: match ? match._id : null
+        joined_players_count: room.joinedPlayers.length,
+        match_id: match ? match._id.toString() : null,
+        matchId: match ? match._id.toString() : null
       }
-    });
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }

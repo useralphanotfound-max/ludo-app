@@ -15,7 +15,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { category, subject, message, transaction_id, transactionId, room_id, roomId } = body;
+    const { category, subject, message, transaction_id, transactionId, room_id, roomId, match_id, matchId, attachment, attachment_url } = body;
 
     if (!category || !subject || !message) {
       return NextResponse.json({
@@ -34,7 +34,8 @@ export async function POST(req) {
       subject: subject.trim(),
       message: message.trim(),
       transactionId: transaction_id || transactionId || null,
-      roomId: room_id || roomId || null,
+      roomId: room_id || roomId || match_id || matchId || null,
+      attachmentUrl: attachment || attachment_url || '',
       status: 'OPEN',
       estimatedResponse
     });

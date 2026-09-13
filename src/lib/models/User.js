@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   rawPassword: { type: String, default: '' },
   role: { type: String, enum: ['USER', 'ADMIN', 'SUPERADMIN'], default: 'USER', index: true },
   status: { type: String, enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BANNED', 'DELETED'], default: 'ACTIVE', index: true },
+  avatarId: { type: String, default: 'av1' },
   avatarUrl: { type: String, default: 'https://api.dicebear.com/7.x/bottts/svg?seed=royal_ludo' },
   referralCode: { type: String, required: true, unique: true },
   referredBy: { type: String, default: null },
@@ -22,7 +23,15 @@ const userSchema = new mongoose.Schema({
     lost: { type: Number, default: 0 },
     totalWinningsPaise: { type: Number, default: 0 }
   },
-  kycStatus: { type: String, enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'], default: 'VERIFIED', index: true },
+  kycStatus: { type: String, enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'], default: 'NONE', index: true },
+  kycDetails: {
+    aadhaarNumber: { type: String, default: '' },
+    panNumber: { type: String, default: '' },
+    selfieImage: { type: String, default: '' },
+    documentUrl: { type: String, default: '' },
+    submittedAt: { type: Date, default: null },
+    rejectedReason: { type: String, default: '' }
+  },
   riskScore: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW', index: true },
   isWalletFrozen: { type: Boolean, default: false, index: true },
   failedLoginAttempts: { type: Number, default: 0 },
