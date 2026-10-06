@@ -23,6 +23,24 @@ export async function POST(req) {
       return NextResponse.json({ success: false, status: false, error: { code: 'UNAUTHORIZED', message: 'User unauthorized' } }, { status: 401 });
     }
 
+    // Auto-expire outdated waiting rooms
+    const now = new Date();
+    const expiredRooms = await Room.find({ status: 'WAITING', expiresAt: { $lte: now }, refundedAt: null });
+    for (const r of expiredRooms) {
+      await Room.updateOne({ _id: r._id }, { $set: { status: 'EXPIRED', refundedAt: now } });
+    }
+
+    // Check if player is already in an active room
+    const playerActiveRoom = await Room.findOne({
+      joinedPlayers: user._id,
+      status: { $in: ['WAITING', 'IN_PROGRESS'] },
+      expiresAt: { $gt: now }
+    });
+
+    if (playerActiveRoom) {
+      return NextResponse.json({ status: false, message: 'You are already in an active room or match' }, { status: 400 });
+    }
+
     const targetCode = room_code || roomCode;
     const targetId = room_id || roomId;
 
@@ -30,10 +48,11 @@ export async function POST(req) {
     if (targetCode) query.roomCode = targetCode.toString().trim();
     else if (targetId) query._id = targetId;
     else query.status = 'WAITING';
+    query.expiresAt = { $gt: now };
 
     const room = await Room.findOne(query);
     if (!room) {
-      return NextResponse.json({ success: false, status: false, error: { code: 'ROOM_NOT_FOUND', message: 'Room not found or no waiting rooms available' } }, { status: 404 });
+      return NextResponse.json({ success: false, status: false, error: { code: 'ROOM_NOT_FOUND', message: 'Room not found or room expired' } }, { status: 404 });
     }
 
     if (room.status !== 'WAITING') {

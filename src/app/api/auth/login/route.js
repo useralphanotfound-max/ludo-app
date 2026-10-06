@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-20
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { mobile, phone, password, fcm_token, fcmToken, device_id, deviceId, platform, deviceType } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
@@ -48,55 +48,44 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    // Automatically mark user ACTIVE upon successful password login
     if (user.status === 'PENDING_VERIFICATION') {
       user.status = 'ACTIVE';
     }
+
+    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    user.currentSessionId = sessionId;
 
     if (targetFcmToken) user.fcmToken = targetFcmToken;
     if (targetDeviceId) user.deviceId = targetDeviceId;
     if (platform || deviceType) user.deviceType = platform || deviceType;
     user.lastLoginAt = new Date();
-
-    // Ensure rawPassword is set if missing
-    if (!user.rawPassword) {
-      user.rawPassword = targetPassword;
-    }
     await user.save();
 
     const accessToken = jwt.sign(
-      { userId: user._id, username: user.username, role: user.role },
+      { userId: user._id, username: user.username, role: user.role, sessionId },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    const refreshToken = jwt.sign(
-      { userId: user._id, action: 'REFRESH' },
-      JWT_SECRET,
-      { expiresIn: '90d' }
-    );
-
     const wallet = await getOrCreateWallet(user._id);
+    const totalBalance = wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance;
 
     return NextResponse.json({
       success: true,
       message: 'Login successful',
       data: {
         access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_in: 2592000,
         user: {
           id: user._id.toString(),
+          alias: user.username || `Player_${user.mobile.slice(-4)}`,
           username: user.username,
           mobile: user.mobile,
-          avatar_id: user.avatarId || 'av1',
-          avatar_url: user.avatarUrl,
-          role: user.role,
-          balance: wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance,
+          avatar_url: user.avatarUrl || 'assets/images/avatars/avatar1.png',
+          wallet_balance: totalBalance,
           deposit_balance: wallet.depositBalance,
           winning_balance: wallet.winningBalance,
           bonus_balance: wallet.bonusBalance,
-          level: user.level || 1,
+          kyc_status: user.kycStatus === 'VERIFIED' ? 'APPROVED' : (user.kycStatus || 'NOT_SUBMITTED'),
           referral_code: user.referralCode
         }
       }

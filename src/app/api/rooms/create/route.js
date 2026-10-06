@@ -48,17 +48,18 @@ export async function POST(req) {
       settings = await GameSettings.create({ key: 'global_settings' });
     }
 
-    // Check if user already has an active WAITING room
+    // Check if user already has an active WAITING room or ACTIVE match
     const existingActiveRoom = await Room.findOne({
-      creatorId: userPayload.userId,
-      status: 'WAITING',
-      expiresAt: { $gt: new Date() }
+      $or: [
+        { creatorId: userPayload.userId, status: 'WAITING', expiresAt: { $gt: new Date() } },
+        { joinedPlayers: userPayload.userId, status: 'IN_PROGRESS' }
+      ]
     });
 
     if (existingActiveRoom) {
       return NextResponse.json({
         success: false,
-        error: { code: 'ACTIVE_ROOM_EXISTS', message: 'You already have an active created room waiting for an opponent.' }
+        error: { code: 'ACTIVE_ROOM_EXISTS', message: 'You already have an active room or ongoing match.' }
       }, { status: 400 });
     }
 

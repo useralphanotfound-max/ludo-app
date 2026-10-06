@@ -69,7 +69,11 @@ export async function creditWallet({
 }
 
 /**
- * Safely debit funds from user wallet (Strict No-Negative Balance Rule).
+ * Safely debit funds from user wallet according to financial rules:
+ * Rule 2: Entry Fee Deduction Order:
+ * 1. Bonus balance (max 10% of entry fee)
+ * 2. Deposit balance
+ * 3. Winning balance
  */
 export async function debitWallet({
   userId,
@@ -98,6 +102,9 @@ export async function debitWallet({
   }
 
   let remainingToDebit = amount;
+  let bonusDeducted = 0;
+  let depositDeducted = 0;
+  let winningDeducted = 0;
 
   if (subBalanceType === 'deposit') {
     if (wallet.depositBalance < amount) {
@@ -106,6 +113,7 @@ export async function debitWallet({
       throw err;
     }
     wallet.depositBalance -= amount;
+    depositDeducted = amount;
   } else if (subBalanceType === 'winning') {
     if (wallet.winningBalance < amount) {
       const err = new Error(`Insufficient winning balance. Required ₹${amount}, Available ₹${wallet.winningBalance}`);
@@ -113,6 +121,7 @@ export async function debitWallet({
       throw err;
     }
     wallet.winningBalance -= amount;
+    winningDeducted = amount;
   } else if (subBalanceType === 'bonus') {
     if (wallet.bonusBalance < amount) {
       const err = new Error(`Insufficient bonus balance. Required ₹${amount}, Available ₹${wallet.bonusBalance}`);
@@ -120,34 +129,35 @@ export async function debitWallet({
       throw err;
     }
     wallet.bonusBalance -= amount;
+    bonusDeducted = amount;
   } else {
-    // Mixed deduction order: Deposit -> Winnings -> Bonus
-    if (wallet.depositBalance >= remainingToDebit) {
-      wallet.depositBalance -= remainingToDebit;
-      remainingToDebit = 0;
-    } else {
-      remainingToDebit -= wallet.depositBalance;
-      wallet.depositBalance = 0;
+    // Standard Room Entry Fee Deduction Order:
+    // 1. Bonus balance up to max 10% allowed by platform rules
+    const maxBonusAllowed = Math.round(amount * 0.10 * 100) / 100;
+    bonusDeducted = Math.min(wallet.bonusBalance, maxBonusAllowed);
+    if (bonusDeducted > 0) {
+      wallet.bonusBalance -= bonusDeducted;
+      remainingToDebit -= bonusDeducted;
+    }
+
+    // 2. Deposit balance
+    if (remainingToDebit > 0) {
+      depositDeducted = Math.min(wallet.depositBalance, remainingToDebit);
+      wallet.depositBalance -= depositDeducted;
+      remainingToDebit -= depositDeducted;
+    }
+
+    // 3. Winning balance
+    if (remainingToDebit > 0) {
+      winningDeducted = Math.min(wallet.winningBalance, remainingToDebit);
+      wallet.winningBalance -= winningDeducted;
+      remainingToDebit -= winningDeducted;
     }
 
     if (remainingToDebit > 0) {
-      if (wallet.winningBalance >= remainingToDebit) {
-        wallet.winningBalance -= remainingToDebit;
-        remainingToDebit = 0;
-      } else {
-        remainingToDebit -= wallet.winningBalance;
-        wallet.winningBalance = 0;
-      }
-    }
-
-    if (remainingToDebit > 0) {
-      if (wallet.bonusBalance >= remainingToDebit) {
-        wallet.bonusBalance -= remainingToDebit;
-        remainingToDebit = 0;
-      } else {
-        remainingToDebit -= wallet.bonusBalance;
-        wallet.bonusBalance = 0;
-      }
+      const err = new Error(`Insufficient wallet balance. Required ₹${amount}, Available ₹${previousTotal}`);
+      err.code = 'INSUFFICIENT_BALANCE';
+      throw err;
     }
   }
 
@@ -167,18 +177,22 @@ export async function debitWallet({
     subBalanceType,
     status: 'SUCCESS',
     referenceId,
-    description: description || `${type} of ₹${amount}`,
+    description: description || `${type} of ₹${amount} (Bonus: ₹${bonusDeducted}, Deposit: ₹${depositDeducted}, Winnings: ₹${winningDeducted})`,
     previousBalance: previousTotal,
     newBalance: newTotal,
     adminId,
     performedBy
   });
 
-  return { wallet, transaction: txn };
+  return {
+    wallet,
+    transaction: txn,
+    deductionBreakdown: { bonusDeducted, depositDeducted, winningDeducted }
+  };
 }
 
 /**
- * Refund entry fee or transaction back to user deposit wallet
+ * Refund entry fee back to user wallet deposit balance or proportional category
  */
 export async function refundWallet({
   userId,

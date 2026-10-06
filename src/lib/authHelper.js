@@ -23,7 +23,13 @@ export async function getAuthUser(req) {
       const userId = decoded?.userId || decoded?.id;
       if (userId) {
         const user = await User.findById(userId);
-        if (user) return user;
+        if (user) {
+          // If token has sessionId, enforce single active session (auto logout old device)
+          if (decoded.sessionId && user.currentSessionId && decoded.sessionId !== user.currentSessionId) {
+            return null;
+          }
+          return user;
+        }
       }
     }
   } catch (e) {

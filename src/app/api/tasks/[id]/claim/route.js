@@ -15,10 +15,10 @@ export async function POST(req, { params }) {
       }, { status: 401 });
     }
 
-    const taskIdParam = params.id;
+    const { id } = await params;
 
     const task = await Task.findOne({
-      $or: [{ taskId: taskIdParam }, { _id: taskIdParam }]
+      $or: [{ taskId: id }, { _id: id }]
     });
 
     if (!task) {
@@ -33,8 +33,8 @@ export async function POST(req, { params }) {
       userTask = await UserTask.create({
         userId: user._id,
         taskId: task.taskId,
-        currentProgress: task.target,
-        isCompleted: true,
+        currentProgress: 0,
+        isCompleted: false,
         isClaimed: false
       });
     }
@@ -42,7 +42,24 @@ export async function POST(req, { params }) {
     if (userTask.isClaimed) {
       return NextResponse.json({
         success: false,
-        error: { code: 'REWARD_ALREADY_CLAIMED', message: 'Reward for this task has already been claimed' }
+        error: { code: 'ALREADY_CLAIMED', message: 'Task reward has already been claimed' }
+      }, { status: 400 });
+    }
+
+    // Check completion progress
+    const gamesPlayed = user.stats?.played || 0;
+    const wins = user.stats?.won || 0;
+    const referredCount = user.referredBy ? 1 : 0;
+
+    let progress = userTask.currentProgress;
+    if (task.taskId === 'task_001') progress = Math.min(gamesPlayed, task.target);
+    if (task.taskId === 'task_002') progress = Math.min(wins, task.target);
+    if (task.taskId === 'task_003') progress = Math.min(referredCount, task.target);
+
+    if (progress < task.target && !userTask.isCompleted) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'TASK_NOT_COMPLETED', message: 'Task requirement has not been met yet' }
       }, { status: 400 });
     }
 
@@ -51,23 +68,29 @@ export async function POST(req, { params }) {
     userTask.claimedAt = new Date();
     await userTask.save();
 
-    const { wallet } = await creditWallet({
-      userId: user._id,
-      amount: task.reward,
-      type: 'BONUS_CREDIT',
-      subBalanceType: task.rewardType === 'cash' ? 'winning' : 'bonus',
-      referenceId: task.taskId,
-      description: `Task reward: ${task.title}`
-    });
+    let walletData = null;
+    if (task.reward > 0) {
+      const { wallet } = await creditWallet({
+        userId: user._id,
+        amount: task.reward,
+        type: 'TASK_REWARD',
+        subBalanceType: task.rewardType === 'cash' ? 'winning' : 'bonus',
+        referenceId: task.taskId,
+        description: `Task reward: ${task.title}`
+      });
+      walletData = wallet;
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Reward claimed! ₹${task.reward} ${task.rewardType} added to your wallet.`,
+      message: `Task reward of ₹${task.reward} claimed successfully!`,
       data: {
         task_id: task.taskId,
         reward: task.reward,
         reward_type: task.rewardType,
-        new_bonus_balance: wallet.bonusBalance
+        is_claimed: true,
+        claimed_at: userTask.claimedAt,
+        new_balance: walletData ? walletData.depositBalance + walletData.winningBalance + walletData.bonusBalance : undefined
       }
     }, { status: 200 });
 

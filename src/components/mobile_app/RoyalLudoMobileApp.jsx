@@ -234,11 +234,27 @@ export default function RoyalLudoMobileApp() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    setUser(null);
-    setWallet(null);
-    setCurrentStep('login');
+  const handleLogout = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      if (token) {
+        // Call backend logout to clear session/FCM token
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }).catch(() => {}); // Fail silently — still logout client-side
+      }
+    } catch (e) {
+      console.error('Logout API error:', e);
+    } finally {
+      localStorage.removeItem('access_token');
+      setUser(null);
+      setWallet(null);
+      setCurrentStep('login');
+    }
   };
 
   if (!isWebEnabled) {

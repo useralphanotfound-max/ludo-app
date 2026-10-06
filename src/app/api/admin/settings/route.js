@@ -21,7 +21,18 @@ export async function PUT(req) {
   try {
     await connectDB();
     const body = await req.json();
-    const { platformCommissionPct, minDepositRs, maxDepositRs, minWithdrawRs, maxWithdrawRs, referralBonusRs, maintenanceMode, maintenanceMessage, forceUpdateVersion } = body;
+    const {
+      platformCommissionPct,
+      minDepositRs,
+      maxDepositRs,
+      minWithdrawRs,
+      maxWithdrawRs,
+      referralBonusRs,
+      maintenanceMode,
+      maintenanceMessage,
+      forceUpdateVersion,
+      isLeaderboardEnabled
+    } = body;
     const clientIp = getClientIp(req);
 
     let settings = await GameSettings.findOne({ key: 'global_settings' });
@@ -36,6 +47,7 @@ export async function PUT(req) {
     if (maintenanceMode !== undefined) settings.maintenanceMode = maintenanceMode;
     if (maintenanceMessage !== undefined) settings.maintenanceMessage = maintenanceMessage;
     if (forceUpdateVersion !== undefined) settings.forceUpdateVersion = forceUpdateVersion;
+    if (isLeaderboardEnabled !== undefined) settings.isLeaderboardEnabled = Boolean(isLeaderboardEnabled);
 
     await settings.save();
 
@@ -43,7 +55,7 @@ export async function PUT(req) {
       adminUsername: 'superadmin',
       action: 'UPDATE_SETTINGS',
       targetEntity: 'SystemSettings',
-      details: `Updated Game Settings: Commission=${settings.platformCommissionPct}%, Maintenance=${settings.maintenanceMode}`,
+      details: `Updated Game Settings: Commission=${settings.platformCommissionPct}%, Maintenance=${settings.maintenanceMode}, LeaderboardEnabled=${settings.isLeaderboardEnabled}`,
       ipAddress: clientIp,
       userAgent: req.headers.get('user-agent') || 'Unknown'
     });

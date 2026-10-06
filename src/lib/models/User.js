@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema({
   lockoutUntil: { type: Date, default: null },
   otpSecret: { type: String, default: null },
   is2FAEnabled: { type: Boolean, default: false },
+  currentSessionId: { type: String, default: null },
   lastLoginAt: { type: Date, default: Date.now },
   lastLoginIp: { type: String, default: '127.0.0.1' }
 }, { timestamps: true });

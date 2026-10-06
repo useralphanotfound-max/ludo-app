@@ -36,6 +36,9 @@ export default function HomeScreen({
   const [withdrawUpi, setWithdrawUpi] = useState('user@upi');
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
+  // UPI Info state (for deposit modal)
+  const [upiInfo, setUpiInfo] = useState(null);
+
   // Support ticket state
   const [ticketCategory, setTicketCategory] = useState('payment');
   const [ticketSubject, setTicketSubject] = useState('');
@@ -44,6 +47,24 @@ export default function HomeScreen({
 
   // Room Create state
   const [submittingRoom, setSubmittingRoom] = useState(false);
+
+  // Dynamic Feature Flags from Admin Panel Settings
+  const [isLeaderboardEnabled, setIsLeaderboardEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success && data?.data) {
+          if (typeof data.data.isLeaderboardEnabled === 'boolean') {
+            setIsLeaderboardEnabled(data.data.isLeaderboardEnabled);
+          } else if (typeof data.data.is_leaderboard_enabled === 'boolean') {
+            setIsLeaderboardEnabled(data.data.is_leaderboard_enabled);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
@@ -64,7 +85,12 @@ export default function HomeScreen({
     setLoadingModal(true);
 
     try {
-      if (modalName === 'referrals') {
+      if (modalName === 'deposit') {
+        // Fetch live UPI info for deposit
+        const res = await fetch('/api/wallet/upi-info?t=' + Date.now());
+        const data = await res.json();
+        if (data.success) setUpiInfo(data.data);
+      } else if (modalName === 'referrals') {
         const res = await authFetch('/api/referral/info');
         const data = await res.json();
         if (data.success) setModalData(data.data);

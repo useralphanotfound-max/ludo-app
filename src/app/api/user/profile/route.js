@@ -1,37 +1,46 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { Wallet } from '@/lib/models/Wallet';
-
 import { getAuthUser } from '@/lib/authHelper';
+import { getOrCreateWallet } from '@/lib/walletHelper';
 
 export async function GET(req) {
   try {
     await connectDB();
     const user = await getAuthUser(req);
-    if (!user) return NextResponse.json({ status: false, message: 'Unauthorized access. Please login.' }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
+      }, { status: 401 });
+    }
 
-    const wallet = await Wallet.findOne({ userId: user._id });
+    const wallet = await getOrCreateWallet(user._id);
+    const totalBalance = wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance;
 
     return NextResponse.json({
-      status: true,
-      message: 'User profile retrieved',
+      success: true,
+      message: 'Profile fetched successfully',
       data: {
-        id: user._id,
-        username: user.username,
-        mobile: user.mobile,
-        avatarUrl: user.avatarUrl,
-        referralCode: user.referralCode,
-        stats: user.stats,
-        wallet: {
-          depositBalanceRs: (wallet?.depositBalance || 0) / 100,
-          winningBalanceRs: (wallet?.winningBalance || 0) / 100,
-          bonusBalanceRs: (wallet?.bonusBalance || 0) / 100,
-          totalBalanceRs: ((wallet?.depositBalance || 0) + (wallet?.winningBalance || 0) + (wallet?.bonusBalance || 0)) / 100
+        user: {
+          id: user._id.toString(),
+          alias: user.username || `Player_${user.mobile.slice(-4)}`,
+          username: user.username,
+          mobile: user.mobile,
+          avatar_url: user.avatarUrl || 'assets/images/avatars/avatar1.png',
+          wallet_balance: totalBalance,
+          deposit_balance: wallet.depositBalance,
+          winning_balance: wallet.winningBalance,
+          bonus_balance: wallet.bonusBalance,
+          referral_code: user.referralCode,
+          kyc_status: user.kycStatus === 'VERIFIED' ? 'APPROVED' : (user.kycStatus || 'NOT_SUBMITTED')
         }
       }
-    });
+    }, { status: 200 });
+
   } catch (error) {
-    return NextResponse.json({ status: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message }
+    }, { status: 500 });
   }
 }

@@ -10,6 +10,8 @@ export async function GET() {
       settings = await GameSettings.create({ key: 'global_settings' });
     }
 
+    const isLeaderboardEnabled = settings.isLeaderboardEnabled !== false;
+
     return NextResponse.json({
       success: true,
       status: true,
@@ -24,7 +26,9 @@ export async function GET() {
         maintenance_mode: settings.maintenanceMode || false,
         maintenance_message: settings.maintenanceMessage || 'Undergoing scheduled maintenance.',
         app_version: settings.forceUpdateVersion || '1.0.0',
-        ludo_king_app_url: settings.ludoKingAppUrl || 'ludoking://play'
+        ludo_king_app_url: settings.ludoKingAppUrl || 'ludoking://play',
+        is_leaderboard_enabled: isLeaderboardEnabled,
+        isLeaderboardEnabled: isLeaderboardEnabled
       }
     }, { status: 200 });
 

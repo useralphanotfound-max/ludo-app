@@ -5,7 +5,7 @@ import AppShell from '@/components/admin/layout/AppShell';
 import StatCard from '@/components/admin/cards/StatCard';
 import { apiFetch } from '@/services/api';
 import Swal from 'sweetalert2';
-import { Settings, Save, ShieldAlert, Percent, DollarSign, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { Settings, Save, ShieldAlert, Percent, DollarSign, ToggleLeft, ToggleRight, Trophy, Eye, EyeOff } from 'lucide-react';
 
 export default function SystemSettingsPage() {
   const [settings, setSettings] = useState({
@@ -16,7 +16,8 @@ export default function SystemSettingsPage() {
     maxWithdrawRs: 25000,
     maintenanceMode: false,
     maintenanceMessage: 'System under scheduled maintenance. Gameplay will resume shortly.',
-    forceUpdateVersion: '1.0.0'
+    forceUpdateVersion: '1.0.0',
+    isLeaderboardEnabled: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,7 +31,10 @@ export default function SystemSettingsPage() {
     try {
       const res = await apiFetch('/admin/settings');
       if (res.status && res.data) {
-        setSettings(res.data);
+        setSettings({
+          ...res.data,
+          isLeaderboardEnabled: res.data.isLeaderboardEnabled !== false
+        });
       }
     } catch (err) {
       console.error(err);
@@ -40,12 +44,12 @@ export default function SystemSettingsPage() {
   };
 
   const handleSave = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setSaving(true);
     try {
       const res = await apiFetch('/admin/settings', 'PUT', settings);
       if (res.status) {
-        Swal.fire({ title: 'Settings Saved!', text: 'System game settings and maintenance configuration updated.', icon: 'success', background: '#111624', color: '#ffffff' });
+        Swal.fire({ title: 'Settings Saved!', text: 'System game settings & feature visibility toggles updated.', icon: 'success', background: '#111624', color: '#ffffff' });
         fetchSettings();
       }
     } catch (err) {
@@ -61,7 +65,7 @@ export default function SystemSettingsPage() {
         {/* Header & Save */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div className="micro-label">SYSTEM CONFIGURATION & EMERGENCY CONTROLS</div>
+            <div className="micro-label">SYSTEM CONFIGURATION & FEATURE VISIBILITY CONTROLS</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.03em' }}>
               <Settings size={26} color="var(--emerald-light)" /> System & Game Configuration
             </h1>
@@ -103,11 +107,46 @@ export default function SystemSettingsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           <StatCard title="Platform Commission Fee" value={`${settings.platformCommissionPct}%`} trend="GGR cut per match" trendType="neutral" icon={Percent} badgeColor="gold" />
           <StatCard title="Deposit Limits (Min/Max)" value={`₹${settings.minDepositRs} - ₹${settings.maxDepositRs.toLocaleString('en-IN')}`} trend="Enforced on UPI" trendType="neutral" icon={DollarSign} badgeColor="emerald" />
-          <StatCard title="Cashout Limits (Min/Max)" value={`₹${settings.minWithdrawRs} - ₹${settings.maxWithdrawRs.toLocaleString('en-IN')}`} trend="Enforced on Payouts" trendType="neutral" icon={DollarSign} badgeColor="emerald" />
+          <StatCard title="Leaderboard Visibility" value={settings.isLeaderboardEnabled ? 'ENABLED' : 'DISABLED'} trend="App feature visibility" trendType={settings.isLeaderboardEnabled ? 'up' : 'down'} icon={Trophy} badgeColor={settings.isLeaderboardEnabled ? 'gold' : 'rose'} />
         </div>
 
         {/* Main Settings Form */}
         <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          
+          {/* Feature Visibility Controls Card */}
+          <div className="glass-panel" style={{ gridColumn: '1 / -1', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Trophy size={18} color="var(--gold)" /> App Feature Visibility & Leaderboard Toggle
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                  Enable or disable the Leaderboard button in the user app. When disabled, the Leaderboard button is hidden from player dashboards.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, isLeaderboardEnabled: !settings.isLeaderboardEnabled })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: 'none',
+                  backgroundColor: settings.isLeaderboardEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)',
+                  color: settings.isLeaderboardEnabled ? 'var(--emerald-light)' : 'var(--rose)',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.isLeaderboardEnabled ? <ToggleRight size={26} /> : <ToggleLeft size={26} />}
+                <span>{settings.isLeaderboardEnabled ? 'LEADERBOARD VISIBLE IN APP' : 'LEADERBOARD HIDDEN IN APP'}</span>
+              </button>
+            </div>
+          </div>
+
           {/* Commission Card */}
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

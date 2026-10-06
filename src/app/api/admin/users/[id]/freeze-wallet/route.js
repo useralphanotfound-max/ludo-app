@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { AdminAuditLog } from '@/lib/models/AdminAuditLog';
-
 import mongoose from 'mongoose';
 
 export async function POST(req, { params }) {
@@ -15,6 +14,9 @@ export async function POST(req, { params }) {
       return NextResponse.json({ status: false, message: 'Invalid User ID' }, { status: 400 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const { freeze = true, reason, adminUsername, adminId } = body;
+
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ status: false, message: 'User not found' }, { status: 404 });
@@ -26,8 +28,8 @@ export async function POST(req, { params }) {
 
     await AdminAuditLog.create({
       adminId: adminId || null,
-      adminUsername: adminUsername || 'SuperAdmin',
-      action: freeze ? 'WALLET_MANUAL_ADJUSTMENT' : 'UNBAN_USER',
+      adminUsername: adminUsername || 'superadmin',
+      action: freeze ? 'FREEZE_WALLET' : 'UNFREEZE_WALLET',
       targetEntity: 'User',
       targetId: userId,
       details: `${freeze ? 'Froze' : 'Unfroze'} wallet for user ${user.username}. Reason: ${reason || 'N/A'}`,
@@ -49,3 +51,5 @@ export async function POST(req, { params }) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }
 }
+
+export const PUT = POST;

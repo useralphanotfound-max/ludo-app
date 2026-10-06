@@ -7,27 +7,33 @@ import { getAuthUser } from '@/lib/authHelper';
 const DEFAULT_TASKS = [
   {
     taskId: 'task_001',
-    title: 'Play 5 Games Today',
-    description: 'Play 5 matches to earn bonus coins',
-    reward: 100.00,
+    title: 'Play 3 Matches Today',
+    description: 'Play 3 matches to earn ₹30 bonus',
+    taskType: 'PLAY_MATCHES',
+    minEntryFee: 0,
+    reward: 30.00,
     rewardType: 'bonus',
-    target: 5
+    target: 3
   },
   {
     taskId: 'task_002',
     title: 'Win Your First Classic Match',
-    description: 'Win a Classic mode game',
-    reward: 200.00,
+    description: 'Win 1 Classic mode game to get ₹50 bonus',
+    taskType: 'WIN_MATCHES',
+    minEntryFee: 0,
+    reward: 50.00,
     rewardType: 'bonus',
     target: 1
   },
   {
     taskId: 'task_003',
-    title: 'Refer a Friend',
-    description: 'Invite a friend and earn big',
-    reward: 50.00,
+    title: 'Play High Stakes (₹100+ Entry)',
+    description: 'Play 3 matches with ₹100 or higher bet to earn ₹100 bonus',
+    taskType: 'PLAY_HIGH_STAKES',
+    minEntryFee: 100,
+    reward: 100.00,
     rewardType: 'bonus',
-    target: 1
+    target: 3
   }
 ];
 
@@ -58,9 +64,10 @@ export async function GET(req) {
       const ut = userTaskMap.get(t.taskId);
       let progress = ut?.currentProgress || 0;
 
-      if (t.taskId === 'task_001') progress = Math.min(gamesPlayed, t.target);
-      if (t.taskId === 'task_002') progress = Math.min(wins, t.target);
-      if (t.taskId === 'task_003') progress = Math.min(referredCount, t.target);
+      if (t.taskType === 'PLAY_MATCHES') progress = Math.max(progress, Math.min(gamesPlayed, t.target));
+      if (t.taskType === 'WIN_MATCHES') progress = Math.max(progress, Math.min(wins, t.target));
+      if (t.taskType === 'REFER_FRIENDS') progress = Math.max(progress, Math.min(referredCount, t.target));
+      if (t.taskType === 'DAILY_LOGIN') progress = 1;
 
       const isCompleted = ut?.isCompleted || progress >= t.target;
 
@@ -68,6 +75,8 @@ export async function GET(req) {
         id: t.taskId,
         title: t.title,
         description: t.description,
+        task_type: t.taskType || 'PLAY_MATCHES',
+        min_entry_fee: t.minEntryFee || 0,
         reward: t.reward,
         reward_type: t.rewardType,
         current_progress: progress,

@@ -4,6 +4,13 @@ const taskSchema = new mongoose.Schema({
   taskId: { type: String, required: true, unique: true, index: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
+  taskType: { 
+    type: String, 
+    enum: ['PLAY_MATCHES', 'WIN_MATCHES', 'PLAY_HIGH_STAKES', 'REFER_FRIENDS', 'DEPOSIT_CASH', 'DAILY_LOGIN'], 
+    default: 'PLAY_MATCHES',
+    index: true 
+  },
+  minEntryFee: { type: Number, default: 0 },
   reward: { type: Number, required: true },
   rewardType: { type: String, enum: ['bonus', 'cash'], default: 'bonus' },
   target: { type: Number, required: true, default: 1 },

@@ -11,7 +11,22 @@ export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json().catch(() => ({}));
-    const { mobile, phone, password, verify_password, verifyPassword, confirm_password, confirmPassword, referral_code, referralCode, device_id, deviceId, platform, device_type, deviceType } = body;
+    const {
+      mobile,
+      phone,
+      password,
+      verify_password,
+      verifyPassword,
+      confirm_password,
+      confirmPassword,
+      referral_code,
+      referralCode,
+      device_id,
+      deviceId,
+      platform,
+      device_type,
+      deviceType
+    } = body;
 
     const targetMobile = (mobile || phone || '').toString().trim();
     const targetPassword = (password || '').toString().trim();
@@ -34,21 +49,14 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    if (!targetVerifyPassword) {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'VERIFY_PASSWORD_REQUIRED', message: 'Verify password is required' }
-      }, { status: 400 });
-    }
-
-    if (targetPassword !== targetVerifyPassword) {
+    if (targetVerifyPassword && targetPassword !== targetVerifyPassword) {
       return NextResponse.json({
         success: false,
         error: { code: 'PASSWORD_MISMATCH', message: 'Create Password and Verify Password do not match' }
       }, { status: 400 });
     }
 
-    // Check if referral_code is entered and if it's valid
+    // Check if referral_code is entered and valid
     if (targetRefCode) {
       const referrerUser = await User.findOne({ referralCode: targetRefCode });
       if (!referrerUser) {
@@ -59,7 +67,7 @@ export async function POST(req) {
       }
     }
 
-    // Check if user already exists and is active
+    // Check if user already exists
     const existingUser = await User.findOne({ mobile: targetMobile });
     if (existingUser && existingUser.status === 'ACTIVE') {
       return NextResponse.json({
@@ -68,16 +76,13 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Fetch dynamic GameSettings
     let settings = await GameSettings.findOne({ key: 'global_settings' });
-    if (!settings) {
-      settings = await GameSettings.create({ key: 'global_settings' });
-    }
+    if (!settings) settings = await GameSettings.create({ key: 'global_settings' });
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(targetPassword, salt);
-    const tempUsername = `user_${targetMobile.slice(-4)}_${Math.floor(1000 + Math.random() * 9000)}`;
-    const genRefCode = `ROYAL${targetMobile.slice(-4)}${Math.floor(100 + Math.random() * 900)}`;
+    const tempUsername = `Player_${targetMobile.slice(-4)}`;
+    const genRefCode = `RL${targetMobile.slice(-4)}${Math.floor(100 + Math.random() * 900)}`;
 
     let user = existingUser;
     if (!user) {
@@ -107,16 +112,11 @@ export async function POST(req) {
       { expiresIn: '10m' }
     );
 
-    const otpCode = settings.useDefaultOtp ? settings.defaultOtpCode : Math.floor(1000 + Math.random() * 9000).toString();
-
     return NextResponse.json({
       success: true,
-      message: settings.useDefaultOtp
-        ? `OTP sent successfully. (Default testing OTP is ${settings.defaultOtpCode})`
-        : 'OTP sent successfully to your mobile number',
+      message: 'OTP sent successfully',
       data: {
         otp_token: otpToken,
-        expires_in: 60,
         mobile: targetMobile,
         otp_code: settings.useDefaultOtp ? settings.defaultOtpCode : undefined
       }

@@ -36,47 +36,43 @@ export async function POST(req, { params }) {
       }, { status: 400 });
     }
 
+    // Calculate reward amount if 0 (random within minReward and maxReward)
+    let winningAmount = card.rewardAmount;
+    if (!winningAmount || winningAmount === 0) {
+      const min = card.minReward || 10;
+      const max = card.maxReward || 50;
+      winningAmount = Math.floor(Math.random() * (max - min + 1)) + min;
+      card.rewardAmount = winningAmount;
+    }
+
     card.isScratched = true;
     card.scratchedAt = new Date();
     await card.save();
 
-    let newBonusBalance = 0;
-    if (card.rewardAmount > 0) {
+    let newWalletBalance = 0;
+    if (winningAmount > 0) {
       const { wallet } = await creditWallet({
         userId: user._id,
-        amount: card.rewardAmount,
+        amount: winningAmount,
         type: 'BONUS_CREDIT',
         subBalanceType: card.rewardType === 'cash' ? 'winning' : 'bonus',
         referenceId: card.cardId,
         description: `Scratch card reward: ${card.name}`
       });
-      newBonusBalance = wallet.bonusBalance;
+      newWalletBalance = wallet.depositBalance + wallet.winningBalance + wallet.bonusBalance;
     }
 
-    if (card.rewardAmount > 0) {
-      return NextResponse.json({
-        success: true,
-        message: `Congratulations! You won ₹${card.rewardAmount}!`,
-        data: {
-          card_id: card.cardId,
-          reward_amount: card.rewardAmount,
-          reward_type: card.rewardType || 'bonus',
-          new_bonus_balance: newBonusBalance,
-          scratched_at: card.scratchedAt
-        }
-      }, { status: 200 });
-    } else {
-      return NextResponse.json({
-        success: true,
-        message: 'Better luck next time!',
-        data: {
-          card_id: card.cardId,
-          reward_amount: 0,
-          reward_type: null,
-          scratched_at: card.scratchedAt
-        }
-      }, { status: 200 });
-    }
+    return NextResponse.json({
+      success: true,
+      message: `Congratulations! You won ₹${winningAmount}!`,
+      data: {
+        card_id: card.cardId,
+        reward_amount: winningAmount,
+        reward_type: card.rewardType || 'bonus',
+        total_wallet_balance: newWalletBalance,
+        scratched_at: card.scratchedAt
+      }
+    }, { status: 200 });
 
   } catch (error) {
     return NextResponse.json({

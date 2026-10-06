@@ -8,14 +8,37 @@ const roomSchema = new mongoose.Schema({
   entryFee: { type: Number, required: true },
   prizePool: { type: Number, default: 0 },
   platformCommission: { type: Number, default: 0 },
-  roomCode: { type: String, required: true, unique: true },
+  roomCode: { type: String, required: true, unique: true, index: true },
   ludoKingCode: { type: String, default: '' },
   isPrivate: { type: Boolean, default: false },
-  status: { type: String, enum: ['WAITING', 'JOINED', 'PLAYING', 'MATCHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'EXPIRED'], default: 'WAITING', index: true },
+  status: {
+    type: String,
+    enum: [
+      'OPEN',
+      'WAITING_FOR_OPPONENT',
+      'WAITING',
+      'JOINED',
+      'MATCHED',
+      'WAITING_FOR_CODE',
+      'CODE_SHARED',
+      'READY_TO_PLAY',
+      'LIVE',
+      'PLAYING',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CANCELLED',
+      'EXPIRED',
+      'REFUNDED'
+    ],
+    default: 'WAITING',
+    index: true
+  },
   joinedPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isCodeShared: { type: Boolean, default: false },
   hostStarted: { type: Boolean, default: false },
   opponentStarted: { type: Boolean, default: false },
+  winnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  loserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   expiresAt: { type: Date, required: true },
   refundedAt: { type: Date, default: null }
 }, { timestamps: true });
@@ -23,4 +46,3 @@ const roomSchema = new mongoose.Schema({
 roomSchema.index({ createdAt: -1 });
 
 export const Room = mongoose.models.Room || mongoose.model('Room', roomSchema);
-
