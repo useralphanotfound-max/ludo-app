@@ -1,45 +1,34 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
+import { SupportTicket } from '@/lib/models/SupportTicket';
+import { User } from '@/lib/models/User';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   try {
     await connectDB();
-    const tickets = [
-      {
-        id: 'TICKET-901',
-        user: 'kingplayer',
-        category: 'WITHDRAWAL_DELAY',
-        priority: 'HIGH',
-        status: 'In Progress',
-        subject: 'UPI Withdrawal pending for 15 minutes',
-        description: 'I initiated withdrawal of ₹500 via PhonePe but haven\'t received bank credit yet.',
-        createdAt: new Date(Date.now() - 900000)
-      },
-      {
-        id: 'TICKET-884',
-        user: 'ludomaster',
-        category: 'GAME_DISPUTE',
-        priority: 'MEDIUM',
-        status: 'Open',
-        subject: 'Opponent disconnected near home triangle',
-        description: 'Player disconnected at turn 34 right before I landed on final home square.',
-        createdAt: new Date(Date.now() - 3600000)
-      },
-      {
-        id: 'TICKET-712',
-        user: 'priya_nair',
-        category: 'KYC_VERIFICATION',
-        priority: 'LOW',
-        status: 'Resolved',
-        subject: 'Aadhaar document re-upload request',
-        description: 'Requested verification status update after uploading clear front/back photo.',
-        createdAt: new Date(Date.now() - 86400000)
-      }
-    ];
+    const tickets = await SupportTicket.find()
+      .populate('userId', 'username mobile avatarUrl')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return NextResponse.json({ status: true, data: tickets });
+    const formatted = tickets.map(t => ({
+      id: t.ticketId || t._id.toString(),
+      _id: t._id.toString(),
+      ticketId: t.ticketId || t._id.toString(),
+      user: t.userId?.username || 'Unknown User',
+      mobile: t.userId?.mobile || 'N/A',
+      category: t.category?.toUpperCase() || 'GENERAL',
+      priority: t.category === 'payment' ? 'HIGH' : 'MEDIUM',
+      status: t.status === 'RESOLVED' ? 'Resolved' : (t.status === 'IN_PROGRESS' ? 'In Progress' : 'Open'),
+      subject: t.subject || 'Support Inquiry',
+      message: t.message || '',
+      description: t.message || '',
+      createdAt: t.createdAt
+    }));
+
+    return NextResponse.json({ status: true, data: formatted });
   } catch (error) {
     return NextResponse.json({ status: false, message: error.message }, { status: 500 });
   }

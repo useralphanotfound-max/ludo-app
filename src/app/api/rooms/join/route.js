@@ -5,6 +5,7 @@ import { Room } from '@/lib/models/Room';
 import { Match } from '@/lib/models/Match';
 import { Wallet } from '@/lib/models/Wallet';
 import { getAuthUser } from '@/lib/authHelper';
+import { refundWallet } from '@/lib/walletHelper';
 
 export async function POST(req) {
   try {
@@ -28,6 +29,12 @@ export async function POST(req) {
     const expiredRooms = await Room.find({ status: 'WAITING', expiresAt: { $lte: now }, refundedAt: null });
     for (const r of expiredRooms) {
       await Room.updateOne({ _id: r._id }, { $set: { status: 'EXPIRED', refundedAt: now } });
+      await refundWallet({
+        userId: r.creatorId,
+        amount: r.entryFee,
+        referenceId: r.roomCode,
+        description: `Auto-refund for expired Room #${r.roomCode}`
+      });
     }
 
     // Check if player is already in an active room
@@ -111,6 +118,27 @@ export async function POST(req) {
         status: 'ACTIVE',
         startedAt: new Date()
       });
+
+      // Auto-cancel any other waiting rooms created by the host and refund them
+      const otherWaitingRooms = await Room.find({
+        creatorId: room.creatorId,
+        _id: { $ne: room._id },
+        status: 'WAITING',
+        refundedAt: null
+      });
+
+      for (const otherRoom of otherWaitingRooms) {
+        otherRoom.status = 'CANCELLED';
+        otherRoom.refundedAt = new Date();
+        await otherRoom.save();
+
+        await refundWallet({
+          userId: room.creatorId,
+          amount: otherRoom.entryFee,
+          referenceId: otherRoom.roomCode,
+          description: `Auto-refund for cancelled Room #${otherRoom.roomCode} as another match started`
+        });
+      }
     } else {
       room.status = 'JOINED';
     }

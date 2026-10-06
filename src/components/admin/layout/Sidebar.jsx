@@ -27,7 +27,9 @@ import {
   UserCheck,
   Globe,
   ChevronRight,
-  User
+  ClipboardList,
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { getRolePermissions, sanitizePermissions, canAccessModule } from '@/lib/rbac';
 
@@ -42,9 +44,11 @@ const iconMap = {
   'live-games': Radio,
   disputes: ShieldAlert,
   risk: ShieldCheck,
-  referrals: Gift,
+  tasks: ClipboardList,
+  'scratch-cards': Gift,
+  referrals: Sparkles,
   notifications: Bell,
-  support: HelpCircle,
+  support: MessageSquare,
   'sub-admins': UserCheck,
   roles: KeyRound,
   logs: FileText,
@@ -78,12 +82,19 @@ const NAVIGATION_GROUPS = [
     ]
   },
   {
-    title: 'USERS & SUPPORT',
+    title: 'ENGAGEMENT & REWARDS',
+    items: [
+      { id: 'tasks', label: 'Daily Missions', path: '/admin/tasks', permission: 'tasks' },
+      { id: 'scratch-cards', label: 'Scratch Cards', path: '/admin/scratch-cards', permission: 'scratch-cards' },
+      { id: 'referrals', label: 'Referrals', path: '/admin/referrals', permission: 'referrals' }
+    ]
+  },
+  {
+    title: 'USERS & LIVE SUPPORT',
     items: [
       { id: 'users', label: 'User Accounts', path: '/admin/users', permission: 'users' },
       { id: 'risk', label: 'Security & Fraud', path: '/admin/risk', permission: 'risk' },
-      { id: 'referrals', label: 'Referrals', path: '/admin/referrals', permission: 'referrals' },
-      { id: 'support', label: 'Support Tickets', path: '/admin/support', permission: 'support' }
+      { id: 'support', label: 'Support & Live Chat', path: '/admin/support', permission: 'support' }
     ]
   },
   {

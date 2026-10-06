@@ -48,18 +48,27 @@ export async function POST(req) {
       settings = await GameSettings.create({ key: 'global_settings' });
     }
 
-    // Check if user already has an active WAITING room or ACTIVE match
-    const existingActiveRoom = await Room.findOne({
-      $or: [
-        { creatorId: userPayload.userId, status: 'WAITING', expiresAt: { $gt: new Date() } },
-        { joinedPlayers: userPayload.userId, status: 'IN_PROGRESS' }
-      ]
+    // Check if user already has an active IN_PROGRESS match
+    const inProgressMatch = await Room.findOne({
+      joinedPlayers: userPayload.userId, status: 'IN_PROGRESS'
     });
 
-    if (existingActiveRoom) {
+    if (inProgressMatch) {
       return NextResponse.json({
         success: false,
-        error: { code: 'ACTIVE_ROOM_EXISTS', message: 'You already have an active room or ongoing match.' }
+        error: { code: 'ACTIVE_ROOM_EXISTS', message: 'You already have an ongoing match.' }
+      }, { status: 400 });
+    }
+
+    // Check if user already has 2 or more WAITING rooms
+    const waitingRoomsCount = await Room.countDocuments({
+      creatorId: userPayload.userId, status: 'WAITING', expiresAt: { $gt: new Date() }
+    });
+
+    if (waitingRoomsCount >= 2) {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'MAX_ROOMS_REACHED', message: 'You already have 2 active open challenges. Cancel or finish one first.' }
       }, { status: 400 });
     }
 

@@ -133,6 +133,13 @@ export async function PUT(req, { params }) {
       }, { status: 404 });
     }
 
+    if (room.status === 'WAITING') {
+      return NextResponse.json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Cannot submit Ludo King code while room is waiting for opponents.' }
+      }, { status: 400 });
+    }
+
     if (room.creatorId.toString() !== user._id.toString()) {
       return NextResponse.json({
         success: false,

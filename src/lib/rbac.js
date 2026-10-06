@@ -151,6 +151,28 @@ export const PERMISSION_TREE = {
       schedule: ['view']
     }
   },
+  tasks: {
+    label: 'Daily Tasks',
+    actions: ['view', 'create', 'edit', 'delete'],
+    protected: false,
+    dependencies: {
+      view: [],
+      create: ['view'],
+      edit: ['view'],
+      delete: ['view']
+    }
+  },
+  'scratch-cards': {
+    label: 'Scratch Cards',
+    actions: ['view', 'create', 'edit', 'delete'],
+    protected: false,
+    dependencies: {
+      view: [],
+      create: ['view'],
+      edit: ['view'],
+      delete: ['view']
+    }
+  },
   support: {
     label: 'Support',
     actions: ['view', 'assign', 'respond', 'resolve', 'escalate'],
