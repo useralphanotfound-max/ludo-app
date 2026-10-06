@@ -278,7 +278,7 @@ export default function SupportOperationsPage() {
 
         {/* TAB 1: LIVE PLAYER CHAT CONSOLE */}
         {activeTab === 'chat' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', height: '620px' }}>
+          <div className="chat-grid" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.25rem', height: '620px' }}>
             {/* Left Column: Player Conversation Threads */}
             <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', overflow: 'hidden' }}>
               <div className="micro-label" style={{ marginBottom: '0.75rem' }}>CONVERSATIONS ({chatThreads.length})</div>

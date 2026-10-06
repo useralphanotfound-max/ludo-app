@@ -111,7 +111,7 @@ export default function UserOperationsPage() {
   const columns = [
     {
       key: 'username',
-      label: 'User Profile',
+      label: 'User',
       render: (_, r) => (
         <div>
           <div style={{ fontWeight: 800, color: '#ffffff' }}>{r.username}</div>
@@ -125,15 +125,6 @@ export default function UserOperationsPage() {
       render: (_, r) => (
         <span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
           {showMaskedPhones ? r.maskedMobile : r.mobile}
-        </span>
-      )
-    },
-    {
-      key: 'rawPassword',
-      label: 'User Password',
-      render: (_, r) => (
-        <span style={{ fontFamily: 'monospace', color: '#f59e0b', fontWeight: 800, backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-          {r.rawPassword || r.raw_password || 'N/A'}
         </span>
       )
     },
@@ -262,16 +253,16 @@ export default function UserOperationsPage() {
           </div>
         </div>
 
-        {/* 4 Mini Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        {/* KPI Cards */}
+        <div className="grid-auto">
           <StatCard title="Total Players" value={summaryStats?.totalUsers || pagination.total || users.length || 0} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={Users} />
           <StatCard title="Active Accounts" value={users.filter(u => u.status === 'ACTIVE').length} trend="Active in rooms" trendType="up" icon={Activity} badgeColor="emerald" />
           <StatCard title="ID Verification Pending" value={users.filter(u => u.kycStatus !== 'VERIFIED').length} trend="Needs check" trendType="neutral" icon={Shield} badgeColor="gold" />
           <StatCard title="Suspicious Accounts" value={users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length} trend="Check activity" trendType="down" icon={TrendingDown} badgeColor="rose" />
         </div>
 
-        {/* Analytics Row: 30-Day Registration Trend & KYC Donut */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
+        {/* Analytics */}
+        <div className="grid-2-1">
           <ChartCard title="30-Day Registration & Growth Velocity" subtitle="Weekly new player onboarding rate" loading={loading}>
             <BarChartWidget data={regTrendData} xKey="name" bars={[{ key: 'count', color: '#10b981', name: 'New Registrations' }]} />
           </ChartCard>
@@ -282,7 +273,7 @@ export default function UserOperationsPage() {
         </div>
 
         {/* Search & Filter Toolbar */}
-        <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="glass-panel" style={{ padding: '0.875rem 1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
           <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search by Username, Mobile, Referral Code, or User ID..." />
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>

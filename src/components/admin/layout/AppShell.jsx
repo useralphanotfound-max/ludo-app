@@ -106,7 +106,7 @@ export default function AppShell({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       {/* Sidebar */}
       <Sidebar
         admin={admin}
@@ -119,7 +119,7 @@ export default function AppShell({ children }) {
       />
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <Header
           admin={admin}
           collapsed={collapsed}
@@ -136,7 +136,7 @@ export default function AppShell({ children }) {
 
         <LiveTicker />
 
-        <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+        <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
           <Breadcrumb />
           <div className="animate-fade-in">{children}</div>
         </main>

@@ -1,33 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import AppShell from '@/components/admin/layout/AppShell';
 import StatCard from '@/components/admin/cards/StatCard';
-import ChartCard from '@/components/admin/cards/ChartCard';
-import BarChartWidget from '@/components/admin/charts/BarChartWidget';
 import DataTable from '@/components/admin/tables/DataTable';
 import StatusBadge from '@/components/admin/tables/StatusBadge';
-import AdminDrawer from '@/components/admin/drawers/AdminDrawer';
 import { apiFetch } from '@/services/api';
 import Swal from 'sweetalert2';
-import { UserCheck, Plus, ShieldCheck, KeyRound, Lock, RefreshCw } from 'lucide-react';
+import { UserCheck, Plus, ShieldCheck, KeyRound, Lock, RefreshCw, Mail } from 'lucide-react';
 
 export default function SubAdminsControlPage() {
   const [loading, setLoading] = useState(true);
   const [admins, setAdmins] = useState([]);
-  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [form, setForm] = useState({ email: '', username: '', password: '', role: 'SUPPORT_MANAGER' });
+  const [creating, setCreating] = useState(false);
 
-  const mockAdmins = [
-    { id: 'ADM-101', username: 'Ritu Rao', role: 'SUPERADMIN', approvalLimitRs: 1000000, require2FA: true, status: 'ACTIVE', createdAt: '2026-08-01' },
-    { id: 'ADM-102', username: 'Arjun Finance', role: 'FINANCE_MANAGER', approvalLimitRs: 25000, require2FA: true, status: 'ACTIVE', createdAt: '2026-08-10' },
-    { id: 'ADM-103', username: 'Priya Ops', role: 'OPERATIONS_ADMIN', approvalLimitRs: 10000, require2FA: true, status: 'ACTIVE', createdAt: '2026-08-15' },
-    { id: 'ADM-104', username: 'Amit Support', role: 'SUPPORT_MANAGER', approvalLimitRs: 5000, require2FA: false, status: 'ACTIVE', createdAt: '2026-08-20' }
-  ];
-
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
+  useEffect(() => { fetchAdmins(); }, []);
 
   const fetchAdmins = async () => {
     try {
@@ -36,39 +25,54 @@ export default function SubAdminsControlPage() {
       if (res.status && res.data?.admins) {
         setAdmins(res.data.admins);
       } else {
-        setAdmins(mockAdmins);
+        setAdmins([]);
       }
     } catch (e) {
-      setAdmins(mockAdmins);
+      setAdmins([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.username || !form.password) return;
+    setCreating(true);
+    try {
+      const res = await apiFetch('/admin/roles', 'POST', form);
+      if (res.status || res.success) {
+        Swal.fire({ title: 'Admin Created', text: `Account for ${form.username} created successfully.`, icon: 'success', background: '#111624', color: '#fff' });
+        setShowCreateModal(false);
+        setForm({ email: '', username: '', password: '', role: 'SUPPORT_MANAGER' });
+        fetchAdmins();
+      }
+    } catch (e) {
+      Swal.fire({ title: 'Error', text: e.message || 'Create failed', icon: 'error', background: '#111624', color: '#fff' });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleRevokeSessions = async (adminId, username) => {
-    const confirm = await Swal.fire({
+    const res = await Swal.fire({
       title: `Revoke Sessions for ${username}?`,
       text: 'Sub-admin will be forcibly logged out across all devices.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: 'var(--rose)',
+      confirmButtonColor: '#f43f5e',
       confirmButtonText: 'Revoke All Sessions',
       background: '#111624',
       color: '#ffffff'
     });
-
-    if (confirm.isConfirmed) {
-      Swal.fire({ title: 'Sessions Revoked', text: `All active tokens invalidated for ${username}`, icon: 'success', background: '#111624', color: '#ffffff' });
+    if (res.isConfirmed) {
+      try {
+        await apiFetch(`/admin/roles/${adminId}/revoke`, 'POST');
+        Swal.fire({ title: 'Sessions Revoked', text: `All active tokens invalidated for ${username}`, icon: 'success', background: '#111624', color: '#fff' });
+      } catch {}
     }
   };
 
-  const roleDistData = [
-    { name: 'Finance Managers', count: 8 },
-    { name: 'Operations Admins', count: 5 },
-    { name: 'Support Managers', count: 4 },
-    { name: 'Gaming Operators', count: 3 },
-    { name: 'System Admins', count: 2 }
-  ];
+  const activeCount = admins.filter(a => a.status === 'ACTIVE').length;
 
   const columns = [
     {
@@ -77,7 +81,7 @@ export default function SubAdminsControlPage() {
       render: (v, r) => (
         <div>
           <div style={{ fontWeight: 800, color: '#ffffff' }}>{v}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>ID: {r.id}</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.email || r.id}</div>
         </div>
       )
     },
@@ -87,18 +91,9 @@ export default function SubAdminsControlPage() {
       render: (v) => <StatusBadge status={v} />
     },
     {
-      key: 'approvalLimitRs',
-      label: 'Financial Limit',
-      render: (v) => <strong style={{ color: 'var(--gold)' }}>₹{(v || 25000).toLocaleString('en-IN')}</strong>
-    },
-    {
-      key: 'require2FA',
-      label: '2FA Security',
-      render: (v) => (
-        <span style={{ fontSize: '0.72rem', color: v ? 'var(--emerald-light)' : 'var(--text-muted)', fontWeight: 800 }}>
-          {v ? '✓ Enabled' : '✕ Disabled'}
-        </span>
-      )
+      key: 'createdAt',
+      label: 'Created',
+      render: (v) => <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{v ? new Date(v).toLocaleDateString() : '—'}</span>
     },
     {
       key: 'status',
@@ -110,121 +105,91 @@ export default function SubAdminsControlPage() {
       label: 'Actions',
       align: 'right',
       render: (_, r) => (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-          <button
-            onClick={() => setSelectedAdmin(r)}
-            style={{
-              padding: '0.35rem 0.65rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: 'var(--surface-2)',
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              cursor: 'pointer'
-            }}
-          >
-            Edit Limits & Role
-          </button>
-          <button
-            onClick={() => handleRevokeSessions(r.id, r.username)}
-            style={{
-              padding: '0.35rem 0.65rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: 'rgba(244, 63, 94, 0.2)',
-              color: 'var(--rose)',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              cursor: 'pointer'
-            }}
-          >
-            Revoke Sessions
-          </button>
-        </div>
+        <button
+          onClick={() => handleRevokeSessions(r._id || r.id, r.username)}
+          className="btn btn-danger"
+        >
+          Revoke Sessions
+        </button>
       )
     }
   ];
 
   return (
     <AppShell>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Header & Create Action */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-page">
+        {/* Header */}
+        <div className="admin-page-header">
           <div>
-            <div className="micro-label">SUB-ADMIN DELEGATION & SECURITY AUTHORITY</div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.03em' }}>
-              <UserCheck size={26} color="var(--emerald-light)" /> Sub-Admin Control Center
+            <div className="micro-label">SUB-ADMIN DELEGATION &amp; ACCESS CONTROL</div>
+            <h1 className="admin-page-title">
+              <UserCheck size={24} color="var(--emerald-light)" /> Sub-Admin Control Center
             </h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <Link
-              href="/admin/sub-admins/create"
-              style={{
-                padding: '0.6rem 1.25rem',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--emerald)',
-                color: '#000000',
-                fontWeight: 900,
-                fontSize: '0.85rem',
-                border: 'none',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <Plus size={16} /> Create Sub-Admin Account
-            </Link>
-
-            <button
-              onClick={fetchAdmins}
-              style={{
-                padding: '0.6rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--surface-1)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-                fontWeight: 700,
-                fontSize: '0.825rem',
-                cursor: 'pointer'
-              }}
-            >
-              <RefreshCw size={15} />
+          <div className="admin-header-actions">
+            <button onClick={fetchAdmins} className="btn btn-ghost"><RefreshCw size={14} /> Refresh</button>
+            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
+              <Plus size={15} /> Add Sub-Admin
             </button>
           </div>
         </div>
 
-        {/* 4 Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-          <StatCard title="Total Sub-Admins" value={admins.length || 24} trend="Superadmin created" trendType="up" icon={UserCheck} badgeColor="emerald" />
-          <StatCard title="Active Operational Accounts" value={admins.filter(a => a.status === 'ACTIVE').length || 21} trend="Active sessions" trendType="up" icon={ShieldCheck} badgeColor="emerald" />
-          <StatCard title="Locked Accounts" value="2 Accounts" trend="Passcode reset req" trendType="down" icon={Lock} badgeColor="rose" />
-          <StatCard title="2FA Enforcement" value="100% Enforced" trend="TOTP Mandatory" trendType="neutral" icon={KeyRound} badgeColor="gold" />
+        {/* KPI Cards */}
+        <div className="grid-auto">
+          <StatCard title="Total Sub-Admins" value={admins.length} trend="In database" trendType="neutral" icon={UserCheck} badgeColor="emerald" />
+          <StatCard title="Active Accounts" value={activeCount} trend="With active sessions" trendType="up" icon={ShieldCheck} badgeColor="emerald" />
+          <StatCard title="Locked Accounts" value={admins.filter(a => a.status === 'LOCKED' || a.status === 'SUSPENDED').length} trend="Require action" trendType="down" icon={Lock} badgeColor="rose" />
+          <StatCard title="Roles Configured" value={[...new Set(admins.map(a => a.role))].length} trend="Distinct roles" trendType="neutral" icon={KeyRound} badgeColor="gold" />
         </div>
 
-        {/* Analytics: Role Distribution Bar Chart */}
-        <ChartCard title="Sub-Admin Role Assignment Distribution" subtitle="Headcount per administrative role group" loading={loading}>
-          <BarChartWidget data={roleDistData} xKey="name" bars={[{ key: 'count', color: '#10b981', name: 'Sub-Admins' }]} />
-        </ChartCard>
-
-        {/* Data Table */}
+        {/* Table */}
         <DataTable
           columns={columns}
           data={admins}
           loading={loading}
           emptyTitle="No Sub-Admin Accounts"
-          emptyDescription="No sub-admin login accounts configured."
+          emptyDescription="No sub-admin accounts configured yet. Create one to get started."
         />
 
-        {/* Admin Drawer */}
-        {selectedAdmin && (
-          <AdminDrawer
-            adminAccount={selectedAdmin}
-            onClose={() => setSelectedAdmin(null)}
-            onRefresh={fetchAdmins}
-          />
+        {/* Create Modal */}
+        {showCreateModal && (
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0, color: '#fff' }}>Create Sub-Admin Account</h3>
+                <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem', minHeight: 0 }}>✕</button>
+              </div>
+              <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Username</label>
+                  <input className="custom-input" type="text" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} required placeholder="e.g. support_ravi" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Email</label>
+                  <input className="custom-input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required placeholder="admin@royalludo.com" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Password</label>
+                  <input className="custom-input" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required placeholder="Min 8 characters" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Role</label>
+                  <select className="custom-input" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                    <option value="SUPPORT_MANAGER">Support Manager</option>
+                    <option value="FINANCE_MANAGER">Finance Manager</option>
+                    <option value="OPERATIONS_ADMIN">Operations Admin</option>
+                    <option value="CONTENT_MANAGER">Content Manager</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button type="button" onClick={() => setShowCreateModal(false)} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={creating}>{creating ? 'Creating...' : 'Create Account'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </AppShell>

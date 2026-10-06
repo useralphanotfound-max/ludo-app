@@ -10,16 +10,14 @@ import StatusBadge from '@/components/admin/tables/StatusBadge';
 import SelectFilter from '@/components/admin/forms/SelectFilter';
 import EmptyState from '@/components/admin/feedback/EmptyState';
 import { apiFetch } from '@/services/api';
-import { DollarSign, ArrowDownLeft, ArrowUpRight, TrendingUp, Users, Gamepad2, ShieldAlert, RefreshCw, Activity, Layers } from 'lucide-react';
+import { DollarSign, ArrowDownLeft, ArrowUpRight, TrendingUp, Users, Gamepad2, ShieldAlert, RefreshCw } from 'lucide-react';
 
 export default function OverviewDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [timeRange, setTimeRange] = useState('7d');
 
-  useEffect(() => {
-    fetchDashboard();
-  }, [timeRange]);
+  useEffect(() => { fetchDashboard(); }, [timeRange]);
 
   const fetchDashboard = async () => {
     try {
@@ -42,40 +40,26 @@ export default function OverviewDashboardPage() {
   const alerts = sec.recentAlerts || [];
   const auditLogs = data?.recentAuditLogs || [];
 
-  // Real 7-day revenue trend directly from MongoDB API
-  const revenueChartData = fin.revenueTrend || [
-    { name: 'Mon', revenue: 0 },
-    { name: 'Tue', revenue: 0 },
-    { name: 'Wed', revenue: 0 },
-    { name: 'Thu', revenue: 0 },
-    { name: 'Fri', revenue: 0 },
-    { name: 'Sat', revenue: 0 },
-    { name: 'Sun', revenue: 0 }
-  ];
+  const revenueChartData = fin.revenueTrend?.length ? fin.revenueTrend : [];
 
-  // Real Game Status breakdown directly from DB
-  const gameDonutData = [
+  const hasGameData = gms.completed > 0 || (data?.pending?.disputes || 0) > 0 || gms.disputed > 0 || gms.cancelled > 0;
+  const gameDonutData = hasGameData ? [
     { name: 'Completed', value: gms.completed || 0, color: '#10b981' },
     { name: 'Pending Result', value: data?.pending?.disputes || 0, color: '#f59e0b' },
     { name: 'Disputed', value: gms.disputed || 0, color: '#f43f5e' },
     { name: 'Cancelled', value: gms.cancelled || 0, color: '#64748b' }
-  ];
-
-  const totalGameCount = (gms.completed || 0) + (data?.pending?.disputes || 0) + (gms.disputed || 0) + (gms.cancelled || 0);
+  ] : [];
 
   return (
     <AppShell>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Header & Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-page">
+        {/* Header */}
+        <div className="admin-page-header">
           <div>
             <div className="micro-label">ADMIN OVERVIEW DASHBOARD</div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', margin: '4px 0 0 0', letterSpacing: '-0.03em' }}>
-              Royal Ludo Overview & System Summary
-            </h1>
+            <h1 className="admin-page-title">Royal Ludo Control Center</h1>
           </div>
-
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="admin-header-actions">
             <SelectFilter
               value={timeRange}
               onChange={setTimeRange}
@@ -86,36 +70,20 @@ export default function OverviewDashboardPage() {
                 { label: 'Last 90 Days', value: '90d' }
               ]}
             />
-            <button
-              onClick={fetchDashboard}
-              style={{
-                padding: '0.6rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--surface-1)',
-                border: '1px solid var(--border)',
-                color: 'var(--emerald-light)',
-                fontWeight: 800,
-                fontSize: '0.825rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <RefreshCw size={15} /> Refresh Dashboard
+            <button onClick={fetchDashboard} className="btn btn-ghost">
+              <RefreshCw size={14} /> Refresh
             </button>
           </div>
         </div>
 
-        {/* Row 1: 4 Financial KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        {/* Financial KPIs */}
+        <div className="grid-auto">
           <StatCard
             title="Total Wallet Balance"
             value={`₹${(fin.totalWalletBalanceRs || 0).toLocaleString('en-IN')}`}
             trend="Live DB aggregate"
             trendType="up"
             icon={DollarSign}
-            badgeText="Live DB"
             badgeColor="emerald"
           />
           <StatCard
@@ -124,128 +92,128 @@ export default function OverviewDashboardPage() {
             trend="Today's inflow"
             trendType="up"
             icon={ArrowDownLeft}
-            badgeText="Inflow"
             badgeColor="emerald"
           />
           <StatCard
             title="Today's Cashouts"
             value={`₹${(fin.withdrawals?.todayRs || 0).toLocaleString('en-IN')}`}
-            trend="Approved & Processed"
+            trend="Approved & processed"
             trendType="neutral"
             icon={ArrowUpRight}
-            badgeText="Outflow"
             badgeColor="rose"
           />
           <StatCard
-            title="Platform Revenue (Fees)"
+            title="Platform Revenue"
             value={`₹${(fin.revenueRs || 0).toLocaleString('en-IN')}`}
-            trend="GGR Cut"
+            trend="GGR cut"
             trendType="up"
             icon={TrendingUp}
-            badgeText="GGR"
             badgeColor="gold"
           />
         </div>
 
-        {/* Row 2: 4 User & Game Telemetry Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        {/* User & Game KPIs */}
+        <div className="grid-auto">
           <StatCard
-            title="Active Players Today"
+            title="Active Players"
             value={(usr.active || 0).toLocaleString('en-IN')}
             trend={`+${usr.newToday || 0} registered today`}
             trendType="up"
             icon={Users}
           />
           <StatCard
-            title="Games Running Now"
+            title="Live Games"
             value={(gms.running || 0).toLocaleString('en-IN')}
-            trend="Live rooms"
+            trend="Running now"
             trendType="up"
             icon={Gamepad2}
-            badgeText="Live"
             badgeColor="emerald"
           />
           <StatCard
-            title="Pending Cashouts Queue"
+            title="Pending Cashouts"
             value={(data?.pending?.withdrawals || 0).toLocaleString('en-IN')}
-            trend="Needs Admin Review"
+            trend="Needs admin review"
             trendType="down"
             icon={ArrowUpRight}
-            badgeText="Review"
             badgeColor="gold"
           />
           <StatCard
             title="Unresolved Disputes"
             value={(data?.pending?.disputes || 0).toLocaleString('en-IN')}
-            trend="Needs Resolution"
+            trend="Needs resolution"
             trendType="down"
             icon={ShieldAlert}
-            badgeText="Risk"
             badgeColor="rose"
           />
         </div>
 
-        {/* Row 3: Revenue Analytics Chart & Game Status Donut */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
-          <ChartCard title="Platform Financial Analytics" subtitle="Daily revenue fee cut vs deposits & withdrawals (Real MongoDB trend)" loading={loading}>
-            <AreaChartWidget data={revenueChartData} xKey="name" yKey="revenue" color="#10b981" formatY={(v) => `₹${(v/1000).toFixed(1)}k`} />
+        {/* Charts Row */}
+        <div className="grid-2-1">
+          <ChartCard title="Platform Revenue Analytics" subtitle="Daily revenue trend from MongoDB" loading={loading}>
+            {revenueChartData.length > 0 ? (
+              <AreaChartWidget data={revenueChartData} xKey="name" yKey="revenue" color="#10b981" formatY={(v) => `₹${v.toLocaleString('en-IN')}`} />
+            ) : (
+              <EmptyState title="No Revenue Data" description="No completed matches recorded yet." />
+            )}
           </ChartCard>
 
-          <ChartCard title="Game Status Breakdown" subtitle="Distribution of match room outcomes" loading={loading}>
-            {totalGameCount === 0 ? (
-              <EmptyState title="No Match Outcomes" description="No game matches recorded in MongoDB database." />
-            ) : (
+          <ChartCard title="Game Status Breakdown" subtitle="Match outcome distribution" loading={loading}>
+            {hasGameData ? (
               <DonutChartWidget data={gameDonutData} />
+            ) : (
+              <EmptyState title="No Match Data" description="No game matches recorded in database." />
             )}
           </ChartCard>
         </div>
 
-        {/* Row 4: Security Alerts & Recent Activity Stream */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+        {/* Security & Audit Feed */}
+        <div className="grid-2">
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div className="micro-label">SECURITY MATRIX</div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', margin: '2px 0 0 0' }}>Active Security Alerts</h3>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', margin: '2px 0 0 0' }}>Security Alerts</h3>
               </div>
               <StatusBadge status={sec.unresolvedAlertsCount > 0 ? 'HIGH' : 'ACTIVE'} text={`${sec.unresolvedAlertsCount || 0} Unresolved`} />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {alerts.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--emerald-light)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-md)' }}>
-                  <ShieldAlert size={28} style={{ margin: '0 auto 0.5rem auto' }} />
-                  <div style={{ fontWeight: 800 }}>No Active Security Threat Signals</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>All multi-signal risk matrices clear in MongoDB.</div>
-                </div>
-              ) : (
-                alerts.map((al, idx) => (
-                  <div key={idx} style={{ padding: '0.85rem', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                    <ShieldAlert size={18} color="var(--rose)" style={{ marginTop: '2px' }} />
+            {alerts.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--emerald-light)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-md)' }}>
+                <ShieldAlert size={26} style={{ margin: '0 auto 0.5rem auto' }} />
+                <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>No Active Threats</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>All risk matrices clear.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {alerts.map((al, idx) => (
+                  <div key={idx} style={{ padding: '0.75rem', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.7rem', alignItems: 'flex-start' }}>
+                    <ShieldAlert size={16} color="var(--rose)" style={{ marginTop: '2px', flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>{al.title || al.description}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{new Date(al.createdAt || Date.now()).toLocaleTimeString()}</div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff' }}>{al.title || al.description}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{new Date(al.createdAt || Date.now()).toLocaleTimeString()}</div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <div className="micro-label">AUDIT FEED</div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', margin: '2px 0 0 0' }}>Live Admin Operations Feed</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', margin: '2px 0 0 0' }}>Admin Operations Log</h3>
             </div>
-
             {auditLogs.length === 0 ? (
-              <EmptyState title="No Audit Log Activity" description="No administrative operations recorded in MongoDB." />
+              <EmptyState title="No Audit Activity" description="No administrative operations recorded yet." />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.825rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.8rem' }}>
                 {auditLogs.map((log, idx) => (
-                  <div key={log._id || idx} style={{ padding: '0.75rem', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div><strong style={{ color: 'var(--emerald-light)' }}>{log.adminUsername || 'Admin'}</strong> {log.action} ({log.module})</div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(log.timestamp || Date.now()).toLocaleTimeString()}</span>
+                  <div key={log._id || idx} style={{ padding: '0.7rem', backgroundColor: 'var(--surface-2)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <strong style={{ color: 'var(--emerald-light)' }}>{log.adminUsername || 'Admin'}</strong>
+                      <span style={{ color: 'var(--text-secondary)' }}> {log.action}</span>
+                    </div>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>{new Date(log.timestamp || Date.now()).toLocaleTimeString()}</span>
                   </div>
                 ))}
               </div>
