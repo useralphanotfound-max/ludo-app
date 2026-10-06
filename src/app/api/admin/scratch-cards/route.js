@@ -44,7 +44,15 @@ export async function POST(req) {
     let createdCards = [];
 
     if (issueToAll) {
-      const allUsers = await User.find({ role: 'USER', status: 'ACTIVE' });
+      const allUsers = await User.find({ role: { $ne: 'SUPERADMIN' } });
+      if (allUsers.length === 0) {
+        return NextResponse.json({
+          success: true,
+          message: 'No active player accounts found in database to issue cards to.',
+          data: { count: 0 }
+        }, { status: 200 });
+      }
+
       const docs = allUsers.map(u => ({
         cardId: `sc_adm_${u._id.toString().slice(-4)}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
         userId: u._id,
