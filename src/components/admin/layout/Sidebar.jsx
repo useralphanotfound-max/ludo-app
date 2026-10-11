@@ -25,7 +25,6 @@ import {
   Shield,
   KeyRound,
   UserCheck,
-  Globe,
   ChevronRight,
   ClipboardList,
   MessageSquare,
@@ -55,7 +54,6 @@ const iconMap = {
   roles: KeyRound,
   logs: FileText,
   settings: Settings,
-  'master-web-settings': Globe,
   monitoring: Activity
 };
 
