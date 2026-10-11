@@ -76,7 +76,7 @@ export async function GET(req, { params }) {
           raw_password: user.rawPassword || 'N/A',
           avatarUrl: user.avatarUrl,
           status: user.status || 'ACTIVE',
-          kycStatus: user.kycStatus || 'VERIFIED',
+          kycStatus: 'NOT_REQUIRED',
           riskScore: user.riskScore || 'LOW',
           isWalletFrozen: user.isWalletFrozen || false,
           referralCode: user.referralCode,

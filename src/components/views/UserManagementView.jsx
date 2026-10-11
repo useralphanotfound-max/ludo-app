@@ -16,7 +16,6 @@ export default function UserManagementView({ permissions = {} }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [kycFilter, setKycFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
@@ -27,7 +26,7 @@ export default function UserManagementView({ permissions = {} }) {
 
   useEffect(() => {
     fetchUsers();
-  }, [search, statusFilter, kycFilter, riskFilter, page]);
+  }, [search, statusFilter, riskFilter, page]);
 
   const fetchUsers = async () => {
     try {
@@ -35,7 +34,6 @@ export default function UserManagementView({ permissions = {} }) {
       const query = new URLSearchParams({
         search,
         status: statusFilter,
-        kycStatus: kycFilter,
         riskScore: riskFilter,
         page: page.toString(),
         limit: '20'
@@ -84,7 +82,7 @@ export default function UserManagementView({ permissions = {} }) {
   const miniStats = [
     { label: 'Total users', value: `${summaryStats?.totalUsers || pagination.total || users.length || 0}`, icon: <Users size={15} />, color: '#60a5fa', trend: summaryStats?.growthTrend || '+0.0% this week', trendColor: '#34d399' },
     { label: 'Active users', value: `${summaryStats?.activeCount !== undefined ? summaryStats.activeCount : users.filter(u => u.status === 'ACTIVE').length}`, icon: <Activity size={15} />, color: '#34d399', trend: 'Active in rooms', trendColor: '#34d399' },
-    { label: 'KYC pending', value: `${summaryStats?.kycPendingCount !== undefined ? summaryStats.kycPendingCount : users.filter(u => u.kycStatus !== 'VERIFIED').length}`, icon: <Shield size={15} />, color: '#fbbf24', trend: 'Review queue', trendColor: '#fbbf24' },
+    { label: 'Suspended/Banned', value: `${users.filter(u => u.status === 'BANNED' || u.status === 'PENDING_VERIFICATION').length}`, icon: <Shield size={15} />, color: '#f87171', trend: 'Restricted', trendColor: '#f87171' },
     { label: 'High-risk', value: `${summaryStats?.highRiskCount !== undefined ? summaryStats.highRiskCount : users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length}`, icon: <TrendingDown size={15} />, color: '#f87171', trend: 'Needs review', trendColor: '#f87171' }
   ];
 
@@ -93,7 +91,7 @@ export default function UserManagementView({ permissions = {} }) {
       <ModuleConsoleShell
         badge="USER OPERATIONS"
         title="User control console"
-        subtitle="360° user overview, compliance state, wallet health, and risk monitoring for every player account."
+        subtitle="360° user overview, account state, wallet health, and risk monitoring for every player account."
         stats={miniStats}
         actions={[
           { label: 'Mask phone numbers', onClick: () => setShowMaskedPhones((prev) => !prev), icon: showMaskedPhones ? <EyeOff size={15} /> : <Eye size={15} />, primary: false },
@@ -122,13 +120,6 @@ export default function UserManagementView({ permissions = {} }) {
             <option value="PENDING_VERIFICATION">Suspended</option>
             <option value="BANNED">Banned Only</option>
           </select>
-
-          <select value={kycFilter} onChange={(e) => { setKycFilter(e.target.value); setPage(1); }} className="custom-input" style={{ width: '140px', fontSize: '0.8rem' }}>
-            <option value="">All KYC States</option>
-            <option value="VERIFIED">KYC Verified</option>
-            <option value="PENDING">KYC Pending</option>
-            <option value="NONE">Unverified</option>
-          </select>
         </div>
       </div>
 
@@ -141,7 +132,6 @@ export default function UserManagementView({ permissions = {} }) {
                 <th style={{ padding: '1rem' }}>User Profile</th>
                 <th style={{ padding: '1rem' }}>Phone Number</th>
                 <th style={{ padding: '1rem' }}>Reg. Date</th>
-                <th style={{ padding: '1rem' }}>KYC State</th>
                 <th style={{ padding: '1rem' }}>Total Wallet</th>
                 <th style={{ padding: '1rem' }}>Deposits</th>
                 <th style={{ padding: '1rem' }}>Cashouts</th>
@@ -155,13 +145,13 @@ export default function UserManagementView({ permissions = {} }) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={12} style={{ padding: '3rem', textAlign: 'center', color: '#facc15', fontWeight: 800 }}>
+                  <td colSpan={11} style={{ padding: '3rem', textAlign: 'center', color: '#facc15', fontWeight: 800 }}>
                     Retrieving User Database Intelligence...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={12} style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan={11} style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
                     No users matching the criteria found.
                   </td>
                 </tr>
@@ -181,18 +171,6 @@ export default function UserManagementView({ permissions = {} }) {
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
                       {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.68rem',
-                        fontWeight: 800,
-                        backgroundColor: u.kycStatus === 'VERIFIED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(250, 204, 21, 0.15)',
-                        color: u.kycStatus === 'VERIFIED' ? '#4ade80' : '#facc15'
-                      }}>
-                        {u.kycStatus}
-                      </span>
                     </td>
                     <td style={{ padding: '1rem', fontWeight: 800, color: '#facc15' }}>
                       ₹{u.wallet?.totalBalanceRs?.toLocaleString('en-IN')}

@@ -85,7 +85,7 @@ export async function POST(req) {
           deposit_balance: wallet.depositBalance,
           winning_balance: wallet.winningBalance,
           bonus_balance: wallet.bonusBalance,
-          kyc_status: user.kycStatus === 'VERIFIED' ? 'APPROVED' : (user.kycStatus || 'NOT_SUBMITTED'),
+          kyc_status: 'NOT_REQUIRED',
           referral_code: user.referralCode
         }
       }

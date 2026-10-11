@@ -60,8 +60,8 @@ export async function GET(req, { params }) {
       data: {
         room_id: room._id.toString(),
         room_code: room.roomCode,
-        ludo_king_code: room.ludoKingCode || room.roomCode,
-        is_code_shared: room.isCodeShared || !!room.ludoKingCode,
+        ludo_king_code: room.ludoKingCode || null,
+        is_code_shared: Boolean(room.isCodeShared && room.ludoKingCode),
         game_mode: (room.gameMode || 'CLASSIC').toLowerCase(),
         player_count: room.playerCount || 2,
         entry_fee: room.entryFee,
@@ -149,9 +149,7 @@ export async function PUT(req, { params }) {
 
     room.ludoKingCode = targetCode.toString().trim();
     room.isCodeShared = true;
-    if (['WAITING', 'JOINED', 'MATCHED'].includes(room.status)) {
-      room.status = 'PLAYING';
-    }
+    room.status = 'CODE_SHARED';
     await room.save();
 
     return NextResponse.json({
@@ -163,7 +161,7 @@ export async function PUT(req, { params }) {
         room_code: room.roomCode,
         ludo_king_code: room.ludoKingCode,
         is_code_shared: true,
-        status: room.status
+        status: 'CODE_SHARED'
       }
     }, { status: 200 });
 

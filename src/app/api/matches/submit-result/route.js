@@ -7,6 +7,7 @@ import { Wallet } from '@/lib/models/Wallet';
 import { Transaction } from '@/lib/models/Transaction';
 import { Dispute } from '@/lib/models/Dispute';
 import { getAuthUser } from '@/lib/authHelper';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 
 export async function POST(req) {
   try {
@@ -19,16 +20,19 @@ export async function POST(req) {
       const formData = await req.formData();
       for (const [key, value] of formData.entries()) {
         if (value && typeof value === 'object' && value.name) {
-          const buffer = Buffer.from(await value.arrayBuffer());
-          const base64 = buffer.toString('base64');
-          const mimeType = value.type || 'image/png';
-          uploadedScreenshot = `data:${mimeType};base64,${base64}`;
+          const saved = await saveUploadedFile(value, 'proofs');
+          uploadedScreenshot = saved?.url || null;
         } else {
           body[key] = value;
         }
       }
     } else {
       body = await req.json().catch(() => ({}));
+      const rawScreenshot = body.screenshotUrl || body.screenshot_url || body.screenshot;
+      if (rawScreenshot && typeof rawScreenshot === 'string' && rawScreenshot.startsWith('data:')) {
+        const saved = await saveUploadedFile(rawScreenshot, 'proofs');
+        uploadedScreenshot = saved?.url || rawScreenshot;
+      }
     }
 
     const matchId = body.matchId || body.match_id;

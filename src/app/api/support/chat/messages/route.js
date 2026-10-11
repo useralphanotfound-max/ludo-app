@@ -26,18 +26,23 @@ export async function GET(req) {
 
     const formatted = messages.map(m => ({
       id: m._id.toString(),
+      text: m.text,
       sender_role: m.senderRole,
       senderRole: m.senderRole,
-      text: m.text,
+      is_player: m.senderRole === 'PLAYER',
       is_read: m.isRead,
       isRead: m.isRead,
+      created_at: m.createdAt ? m.createdAt.toISOString() : (m.timestamp ? new Date(m.timestamp).toISOString() : new Date().toISOString()),
       timestamp: m.timestamp || m.createdAt
     }));
 
     return NextResponse.json({
       success: true,
       status: true,
-      data: formatted
+      data: {
+        messages: formatted,
+        count: formatted.length
+      }
     }, { status: 200 });
 
   } catch (error) {
@@ -93,15 +98,19 @@ export async function POST(req) {
       timestamp: new Date()
     });
 
+    const createdAtIso = msg.createdAt ? msg.createdAt.toISOString() : new Date().toISOString();
+
     return NextResponse.json({
       success: true,
       status: true,
-      message: 'Message sent successfully',
+      message: 'Message sent.',
       data: {
         id: msg._id.toString(),
-        sender_role: msg.senderRole,
         text: msg.text,
-        is_read: msg.isRead,
+        sender_role: msg.senderRole,
+        is_player: true,
+        is_read: false,
+        created_at: createdAtIso,
         timestamp: msg.timestamp
       }
     }, { status: 201 });

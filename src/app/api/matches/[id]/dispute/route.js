@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { Match } from '@/lib/models/Match';
 import { Dispute } from '@/lib/models/Dispute';
 import { getAuthUser } from '@/lib/authHelper';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 import mongoose from 'mongoose';
 
 export async function POST(req, { params }) {
@@ -17,11 +18,33 @@ export async function POST(req, { params }) {
     }
 
     const { id } = await params;
-    const body = await req.json();
-    const { reason, screenshot_url, screenshotUrl, screenshot } = body;
+    let reason = 'Player disputed match result';
+    let targetScreenshot = '';
 
-    const targetReason = reason || 'Player disputed match result';
-    const targetScreenshot = screenshot_url || screenshotUrl || screenshot || '';
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      reason = formData.get('reason') || reason;
+      const file = formData.get('screenshot') || formData.get('screenshot_url') || formData.get('proof');
+      if (file && typeof file === 'object' && file.name) {
+        const saved = await saveUploadedFile(file, 'proofs');
+        targetScreenshot = saved?.url || '';
+      } else if (typeof file === 'string' && file.length > 0) {
+        const saved = await saveUploadedFile(file, 'proofs');
+        targetScreenshot = saved?.url || file;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      reason = body.reason || reason;
+      const rawScreenshot = body.screenshot_url || body.screenshotUrl || body.screenshot || '';
+      if (rawScreenshot) {
+        const saved = await saveUploadedFile(rawScreenshot, 'proofs');
+        targetScreenshot = saved?.url || rawScreenshot;
+      }
+    }
+
+    const targetReason = reason;
 
     let query = {};
     if (mongoose.Types.ObjectId.isValid(id)) {

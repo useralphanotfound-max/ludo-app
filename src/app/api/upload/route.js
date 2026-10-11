@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs/promises';
-
-const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
-const MAX_FILE_SIZE_BYTES = 200 * 1024; // 200 KB
+import { saveUploadedFile, ALLOWED_EXTENSIONS, MAX_FILE_SIZE_BYTES } from '@/lib/uploadHelper';
 
 export async function POST(req) {
   try {
     let folder = 'proofs';
-    let fileBuffer = null;
+    let fileToSave = null;
     let fileName = '';
 
     const contentType = req.headers.get('content-type') || '';
@@ -25,8 +21,8 @@ export async function POST(req) {
         }, { status: 400 });
       }
 
-      fileName = file.name || `upload_${Date.now()}.png`;
-      fileBuffer = Buffer.from(await file.arrayBuffer());
+      fileToSave = file;
+      fileName = file.name || '';
 
     } else {
       const body = await req.json().catch(() => ({}));
@@ -40,65 +36,22 @@ export async function POST(req) {
         }, { status: 400 });
       }
 
-      const matches = base64Data.match(/^data:image\/([a-zA-Z0-9+\-+]+);base64,(.+)$/);
-      let ext = '.png';
-      let rawBase64 = base64Data;
-
-      if (matches && matches.length === 3) {
-        ext = `.${matches[1] === 'jpeg' ? 'jpg' : matches[1]}`;
-        rawBase64 = matches[2];
-      }
-
-      fileName = body.fileName || `upload_${Date.now()}${ext}`;
-      fileBuffer = Buffer.from(rawBase64, 'base64');
+      fileToSave = base64Data;
+      fileName = body.fileName || '';
     }
 
-    // Validate Subfolder
-    const validFolders = ['avatars', 'proofs', 'payment_screenshots'];
-    if (!validFolders.includes(folder)) {
-      folder = 'proofs';
-    }
-
-    // Validate File Size (Max 200 KB)
-    if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'FILE_TOO_LARGE', message: `File size exceeds maximum limit of 200 KB (Current size: ${(fileBuffer.length / 1024).toFixed(1)} KB)` }
-      }, { status: 400 });
-    }
-
-    // Validate Extension
-    const ext = path.extname(fileName).toLowerCase();
-    if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'INVALID_FILE_TYPE', message: `Invalid file extension '${ext}'. Allowed types: .png, .jpg, .jpeg, .webp` }
-      }, { status: 400 });
-    }
-
-    // Ensure Directory Exists
-    const targetDir = path.join(process.cwd(), 'public', 'uploads', folder);
-    await fs.mkdir(targetDir, { recursive: true });
-
-    // Generate Safe Unique File Name
-    const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
-    const targetPath = path.join(targetDir, uniqueFileName);
-
-    // Save File to Disk
-    await fs.writeFile(targetPath, fileBuffer);
-
-    const relativeUrl = `/uploads/${folder}/${uniqueFileName}`;
+    const savedFile = await saveUploadedFile(fileToSave, folder, fileName);
 
     return NextResponse.json({
       success: true,
       status: true,
       message: 'File uploaded successfully',
       data: {
-        url: relativeUrl,
-        file_path: relativeUrl,
-        file_name: uniqueFileName,
-        size_bytes: fileBuffer.length,
-        size_kb: Math.round(fileBuffer.length / 1024)
+        url: savedFile.url,
+        file_path: savedFile.filePath,
+        file_name: savedFile.fileName,
+        size_bytes: savedFile.sizeBytes,
+        size_kb: Math.round(savedFile.sizeBytes / 1024)
       }
     }, { status: 201 });
 

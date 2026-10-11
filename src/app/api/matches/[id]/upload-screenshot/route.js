@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Match } from '@/lib/models/Match';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
@@ -37,16 +38,19 @@ export async function POST(req, { params }) {
       const formData = await req.formData();
       const file = formData.get('screenshot') || formData.get('screenshot_url') || formData.get('proof_image') || formData.get('file');
       if (file && typeof file === 'object' && file.name) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const base64 = buffer.toString('base64');
-        const mimeType = file.type || 'image/png';
-        screenshotUrl = `data:${mimeType};base64,${base64}`;
+        const saved = await saveUploadedFile(file, 'proofs');
+        screenshotUrl = saved?.url || null;
       } else if (typeof file === 'string' && file.length > 0) {
-        screenshotUrl = file;
+        const saved = await saveUploadedFile(file, 'proofs');
+        screenshotUrl = saved?.url || file;
       }
     } else {
       const body = await req.json().catch(() => ({}));
-      screenshotUrl = body.screenshot_url || body.screenshotUrl || body.screenshot;
+      const rawScreenshot = body.screenshot_url || body.screenshotUrl || body.screenshot;
+      if (rawScreenshot) {
+        const saved = await saveUploadedFile(rawScreenshot, 'proofs');
+        screenshotUrl = saved?.url || rawScreenshot;
+      }
     }
 
     if (!screenshotUrl) {

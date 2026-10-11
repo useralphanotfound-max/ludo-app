@@ -2,10 +2,18 @@ import mongoose from 'mongoose';
 
 const withdrawalRequestSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  username: { type: String, required: true },
-  mobile: { type: String, required: true },
-  amountPaise: { type: Number, required: true },
-  payoutMethod: { type: String, enum: ['UPI', 'BANK_TRANSFER'], required: true },
+  requestId: { type: String, default: '' },
+  username: { type: String, default: '' },
+  mobile: { type: String, default: '' },
+  amount: { type: Number, default: 0 },
+  amountPaise: { type: Number, default: 0 },
+  payoutMethod: { type: String, default: 'UPI' },
+  payoutDetails: {
+    upiId: { type: String, default: '' },
+    accountNumber: { type: String, default: '' },
+    ifscCode: { type: String, default: '' },
+    accountHolderName: { type: String, default: '' }
+  },
   accountDetails: {
     upiId: { type: String, default: '' },
     accountNumber: { type: String, default: '' },

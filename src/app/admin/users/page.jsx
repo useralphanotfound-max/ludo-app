@@ -21,7 +21,6 @@ export default function UserOperationsPage() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [kycFilter, setKycFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
@@ -32,7 +31,7 @@ export default function UserOperationsPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [search, statusFilter, kycFilter, riskFilter, page]);
+  }, [search, statusFilter, riskFilter, page]);
 
   const fetchUsers = async () => {
     try {
@@ -40,7 +39,6 @@ export default function UserOperationsPage() {
       const query = new URLSearchParams({
         search,
         status: statusFilter,
-        kycStatus: kycFilter,
         riskScore: riskFilter,
         page: page.toString(),
         limit: '20'
@@ -89,17 +87,15 @@ export default function UserOperationsPage() {
   };
 
   // Sub-dashboard chart data calculated dynamically from API
-  const verifiedCount = users.filter(u => u.kycStatus === 'VERIFIED').length;
-  const pendingKycCount = users.filter(u => u.kycStatus === 'PENDING').length;
-  const rejectedKycCount = users.filter(u => u.kycStatus === 'REJECTED').length;
+  const lowRiskCount = users.filter(u => (u.riskScore || 'LOW') === 'LOW').length;
+  const medRiskCount = users.filter(u => u.riskScore === 'MEDIUM').length;
+  const highRiskCount = users.filter(u => u.riskScore === 'HIGH').length;
 
-  const kycDonutData = [
-    { name: 'Verified', value: verifiedCount, color: '#10b981' },
-    { name: 'Pending Review', value: pendingKycCount, color: '#f59e0b' },
-    { name: 'Rejected', value: rejectedKycCount, color: '#f43f5e' }
+  const riskDonutData = [
+    { name: 'Low Risk', value: lowRiskCount, color: '#10b981' },
+    { name: 'Medium Risk', value: medRiskCount, color: '#f59e0b' },
+    { name: 'High Risk', value: highRiskCount, color: '#f43f5e' }
   ];
-
-  const totalKycCount = verifiedCount + pendingKycCount + rejectedKycCount;
 
   const regTrendData = summaryStats?.regTrendData || [
     { name: 'W1', count: users.filter(u => new Date(u.createdAt) > new Date(Date.now() - 28 * 86400000) && new Date(u.createdAt) <= new Date(Date.now() - 21 * 86400000)).length },
@@ -132,11 +128,6 @@ export default function UserOperationsPage() {
       key: 'createdAt',
       label: 'Reg. Date',
       render: (v) => <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(v || Date.now()).toLocaleDateString()}</span>
-    },
-    {
-      key: 'kycStatus',
-      label: 'KYC State',
-      render: (v) => <StatusBadge status={v || 'UNVERIFIED'} />
     },
     {
       key: 'wallet',
@@ -257,7 +248,7 @@ export default function UserOperationsPage() {
         <div className="grid-auto">
           <StatCard title="Total Players" value={summaryStats?.totalUsers || pagination.total || users.length || 0} trend={summaryStats?.growthTrend || '+0.0% this month'} trendType="up" icon={Users} />
           <StatCard title="Active Accounts" value={users.filter(u => u.status === 'ACTIVE').length} trend="Active in rooms" trendType="up" icon={Activity} badgeColor="emerald" />
-          <StatCard title="ID Verification Pending" value={users.filter(u => u.kycStatus !== 'VERIFIED').length} trend="Needs check" trendType="neutral" icon={Shield} badgeColor="gold" />
+          <StatCard title="Frozen Wallets" value={users.filter(u => u.isWalletFrozen).length} trend="Locked" trendType="neutral" icon={Shield} badgeColor="gold" />
           <StatCard title="Suspicious Accounts" value={users.filter(u => (u.riskScore || '').toUpperCase() === 'HIGH').length} trend="Check activity" trendType="down" icon={TrendingDown} badgeColor="rose" />
         </div>
 
@@ -267,8 +258,8 @@ export default function UserOperationsPage() {
             <BarChartWidget data={regTrendData} xKey="name" bars={[{ key: 'count', color: '#10b981', name: 'New Registrations' }]} />
           </ChartCard>
 
-          <ChartCard title="KYC Compliance Distribution" subtitle="Player verification breakdown" loading={loading}>
-            <DonutChartWidget data={kycDonutData} />
+          <ChartCard title="Risk & Security Distribution" subtitle="Player fraud risk rating breakdown" loading={loading}>
+            <DonutChartWidget data={riskDonutData} />
           </ChartCard>
         </div>
 
@@ -285,17 +276,6 @@ export default function UserOperationsPage() {
                 { label: 'Active Only', value: 'ACTIVE' },
                 { label: 'Suspended', value: 'PENDING_VERIFICATION' },
                 { label: 'Banned Only', value: 'BANNED' }
-              ]}
-            />
-
-            <SelectFilter
-              value={kycFilter}
-              onChange={(v) => { setKycFilter(v); setPage(1); }}
-              placeholder="All KYC States"
-              options={[
-                { label: 'KYC Verified', value: 'VERIFIED' },
-                { label: 'KYC Pending', value: 'PENDING' },
-                { label: 'Unverified', value: 'NONE' }
               ]}
             />
           </div>

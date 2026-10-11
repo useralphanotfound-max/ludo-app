@@ -1,0 +1,855 @@
+Here is the comprehensive, production-ready **Backend Implementation & Architecture Specification Prompt** written in English. You can copy and hand this directly to your backend developer or backend AI agent.
+
+***
+
+```markdown
+# ROYAL LUDO — COMPLETE BACKEND & API IMPLEMENTATION SPECIFICATION
+
+> **Target Systems**: Node.js (Express / NestJS) or Python (FastAPI), MongoDB / PostgreSQL, Redis  
+> **Client Frontend**: Flutter Mobile App (`Royal Ludo`)  
+> **API Base URL**: `https://royalludo-nine.vercel.app/api`  
+> **Objective**: Implement, repair, and freeze all backend endpoints, database models, real-time polling states, and admin operations so that all end-to-end user flows, matchmaking cycles, financial transactions, and test cases pass with zero client-side mock data.
+
+---
+
+## 1. Executive Summary & Critical Fixes Required
+
+The Flutter client application is undergoing complete end-to-end integration and automated QA. To ensure that 100% of user flows and test cases pass seamlessly, the backend must implement and fix the following critical areas:
+
+1. **Two-Player Matchmaking State Machine (Highest Priority)**:
+   - When Player A creates a room (`POST /rooms/create`), the room is saved in `WAITING` status.
+   - When Player B joins (`POST /rooms/join`), the backend must atomically add Player B as `opponent`, deduct Player B's entry fee, update status to `MATCHED` or `WAITING_FOR_CODE`, and persist both players' details.
+   - **Crucial**: `GET /rooms/:id_or_code` and `GET /rooms` **MUST return fully populated objects** for both `creator` and `opponent` (`id`, `username`, `avatar_url`), NOT unpopulated string IDs. This is required so Player A's waiting room screen immediately sees Player B's real username/avatar and transitions out of "WAITING".
+   - `PUT /rooms/:id_or_code/code`: Must accept the host's Ludo King 6–8 digit room code and set status to `CODE_SHARED`.
+
+2. **Real Support Chat Engine**:
+   - `GET /support/chat/messages` and `POST /support/chat/messages` must persist player and admin messages.
+   - Provide `sender_role` (`PLAYER` | `ADMIN`), timestamps, and `is_read` flags.
+   - Unread message tracking (`GET /support/chat/unread-count`, `POST /support/chat/mark-read`).
+
+3. **Financial Integrity & Admin Approval Workflows**:
+   - Fix Admin deposit approval (`POST /admin/deposits/:depositId/approve` and `:depositId/reject`). It currently returns 404 `DEPOSIT_NOT_FOUND`.
+   - Implement withdrawal approval (`POST /admin/withdrawals/:withdrawalId/approve` and `reject`).
+   - Atomic wallet balance deductions and credits: Never allow duplicate deductions, duplicate winnings, or duplicate refunds.
+
+4. **Dynamic User Statistics**:
+   - `GET /user/profile` must return real computed `total_matches` and `total_wins`, eliminating the need for client-side fallbacks.
+
+---
+
+## 2. Global API Standards & Envelope Contracts
+
+### 2.1 Request Headers
+All authenticated API calls from Flutter include:
+```http
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer <JWT_ACCESS_TOKEN>
+X-Device-ID: <DEVICE_UUID>
+X-App-Version: 1.0.0
+```
+
+### 2.2 Standard Response Envelopes
+
+#### Success Envelope (HTTP 200, 201)
+```json
+{
+  "success": true,
+  "status": true,
+  "message": "Operation completed successfully.",
+  "data": {}
+}
+```
+
+#### Error Envelope (HTTP 400, 401, 403, 404, 409, 422, 429, 500)
+```json
+{
+  "success": false,
+  "status": false,
+  "error": {
+    "code": "INSUFFICIENT_BALANCE",
+    "message": "Insufficient wallet balance. Required ₹100, Available ₹0",
+    "details": null
+  }
+}
+```
+
+---
+
+## 3. Database Schema Models
+
+### 3.1 `users` Collection / Table
+```json
+{
+  "_id": "ObjectId / UUID",
+  "mobile": "9876543210",               // Unique, indexed (10 digits)
+  "password_hash": "string",
+  "username": "KingPlayer99",           // Unique, min 3 chars
+  "avatar_id": "av1",                   // "av1" .. "av8"
+  "avatar_url": "assets/images/avatars/avatar1.png",
+  "total_balance": 250.0,               // deposit_balance + winning_balance + bonus_balance
+  "deposit_balance": 100.0,
+  "winning_balance": 150.0,
+  "bonus_balance": 0.0,
+  "kyc_status": "NONE",                 // "NONE", "PENDING", "VERIFIED", "REJECTED"
+  "is_wallet_frozen": false,
+  "status": "ACTIVE",                   // "ACTIVE", "SUSPENDED", "BANNED"
+  "referral_code": "RL987654",          // Unique, indexed
+  "referred_by": null,
+  "total_wins": 14,
+  "total_matches": 22,
+  "created_at": "ISO-8601",
+  "updated_at": "ISO-8601"
+}
+```
+
+### 3.2 `rooms` Collection / Table
+```json
+{
+  "_id": "ObjectId / UUID",
+  "room_code": "RL-8820",               // Unique, 6-digit display code, indexed
+  "creator_id": "Ref(users)",           // Indexed
+  "opponent_id": "Ref(users)",          // Nullable, indexed
+  "entry_fee": 100.0,                   // Minimum 10.0
+  "prize_pool": 190.0,                  // (entry_fee * 2) - 5% commission
+  "platform_commission": 10.0,
+  "status": "WAITING",                  // "WAITING", "MATCHED", "CODE_SHARED", "PLAYING", "COMPLETED", "EXPIRED", "REFUNDED"
+  "ludo_king_code": null,               // 6 to 8 alphanumeric digits
+  "is_code_shared": false,
+  "winner_id": null,
+  "loser_id": null,
+  "created_at": "ISO-8601",
+  "expires_at": "ISO-8601",             // created_at + 60s
+  "updated_at": "ISO-8601"
+}
+```
+
+### 3.3 `chat_messages` Collection / Table
+```json
+{
+  "_id": "ObjectId / UUID",
+  "user_id": "Ref(users)",              // Player user ID
+  "sender_role": "PLAYER",              // "PLAYER" or "ADMIN"
+  "sender_id": "Ref(users)",
+  "text": "Hello support, I need help with my deposit.",
+  "is_read": false,
+  "created_at": "ISO-8601"
+}
+```
+
+---
+
+## 4. Module 1: Challenge & Matchmaking APIs
+
+### 4.1 Create Room
+- **Method**: `POST`
+- **Path**: `/rooms/create`
+- **Auth**: Bearer Token
+- **Request Body**:
+  ```json
+  {
+    "entry_fee": 100.0,
+    "player_count": 2,
+    "is_private": false
+  }
+  ```
+- **Validation**:
+  1. `entry_fee >= 10`.
+  2. User `(deposit_balance + winning_balance) >= entry_fee`.
+  3. User does not already have an active room in `WAITING` or `MATCHED` status.
+- **Transaction**:
+  - Atomically deduct `entry_fee` from user wallet.
+  - Create room with `status: "WAITING"`.
+  - Set `expires_at = now() + 60 seconds`.
+- **Response `201 Created`**:
+  ```json
+  {
+    "success": true,
+    "message": "Room created successfully. Waiting for opponent.",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "RL-9920",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "status": "WAITING",
+      "timer_seconds": 60,
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "RoyalKing",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      },
+      "opponent": null
+    }
+  }
+  ```
+
+### 4.2 List Open / Available Rooms
+- **Method**: `GET`
+- **Path**: `/rooms` (or `/rooms/available`)
+- **Query Params**: `?entry_fee=100` (optional filter)
+- **Rules**: Return rooms where `status == "WAITING"` and `expires_at > now()`.
+- **Important**: Populate the `creator` field with `username` and `avatar_url` so the lobby displays real names and avatars instead of defaulting to "Player".
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "status": true,
+    "data": [
+      {
+        "room_id": "6ac5d978b67fb3c853769b3e",
+        "room_code": "RL-9920",
+        "entry_fee": 100.0,
+        "prize_pool": 190.0,
+        "status": "WAITING",
+        "creator": {
+          "id": "6ac537ff42d441dd11b2c90b",
+          "username": "TigerGamer",
+          "avatar_url": "assets/images/avatars/avatar3.png"
+        },
+        "created_at": "2026-10-11T12:00:00Z",
+        "expires_at": "2026-10-11T12:01:00Z"
+      }
+    ]
+  }
+  ```
+
+### 4.3 Join Room
+- **Method**: `POST`
+- **Path**: `/rooms/join`
+- **Auth**: Bearer Token
+- **Request Body**:
+  ```json
+  {
+    "room_code": "RL-9920"
+  }
+  ```
+- **Validation & Atomic Execution**:
+  1. Room must exist. Error `404 ROOM_NOT_FOUND` if missing or expired.
+  2. Room must be in `WAITING` status and `opponent_id == null`. Error `409 ROOM_FULL` if another player joined.
+  3. Joining player `id != creator_id`. Error `400 CANNOT_JOIN_OWN_ROOM`.
+  4. Joining player `(deposit_balance + winning_balance) >= room.entry_fee`. Error `400 INSUFFICIENT_BALANCE`.
+  5. Atomically lock room row, assign `opponent_id = user._id`, deduct `entry_fee`, and transition `status = "MATCHED"`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Successfully joined challenge room!",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "RL-9920",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "status": "MATCHED",
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "TigerGamer",
+        "avatar_url": "assets/images/avatars/avatar3.png"
+      },
+      "opponent": {
+        "id": "6acb76e56d9cd7c380182f9d",
+        "username": "RoyalKing",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      }
+    }
+  }
+  ```
+
+### 4.4 Get Single Room Details (Used for Polling)
+- **Method**: `GET`
+- **Path**: `/rooms/:id_or_code`
+- **Auth**: Bearer Token
+- **Critical Requirement**: Both `creator` and `opponent` objects MUST be fully populated.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "RL-9920",
+      "status": "MATCHED",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "ludo_king_code": "849201",
+      "is_code_shared": true,
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "TigerGamer",
+        "avatar_url": "assets/images/avatars/avatar3.png"
+      },
+      "opponent": {
+        "id": "6acb76e56d9cd7c380182f9d",
+        "username": "RoyalKing",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      },
+      "created_at": "2026-10-11T12:00:00Z"
+    }
+  }
+  ```
+
+### 4.5 Submit / Share Ludo King Code (Host Only)
+- **Method**: `PUT`
+- **Path**: `/rooms/:id_or_code/code`
+- **Auth**: Bearer Token
+- **Request Body**:
+  ```json
+  {
+    "ludo_king_code": "849201"
+  }
+  ```
+- **Validation**:
+  - Authenticated user must be `creator_id`.
+  - Room status must be `MATCHED`.
+  - `ludo_king_code` must be between 4 and 10 alphanumeric characters.
+- **Action**: Update `ludo_king_code = code`, `is_code_shared = true`, `status = "CODE_SHARED"`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Ludo King room code set.",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "ludo_king_code": "849201",
+      "status": "CODE_SHARED"
+    }
+  }
+  ```
+
+### 4.6 Cancel / Expire Room & Automatic Refund
+- **Method**: `DELETE`
+- **Path**: `/rooms/:id_or_code`
+- **Auth**: Bearer Token
+- **Validation**: Only the creator can cancel, and only when `status == "WAITING"` and `opponent == null`.
+- **Action**: Atomically refund `entry_fee` to creator's wallet, create a transaction record with `type: "REFUND"`, and mark `status: "CANCELLED"` or delete the room.
+
+---
+
+## 5. Module 2: Match Result Submission & Verification
+
+### 5.1 Submit Match Result & Screenshot
+- **Method**: `POST`
+- **Path**: `/matches/submit-result`
+- **Auth**: Bearer Token
+- **Request Body**:
+  ```json
+  {
+    "match_id": "6ac5d978b67fb3c853769b3e",
+    "status": "WON",
+    "screenshot_url": "uploads/proofs/proof_123.png"
+  }
+  ```
+- **Rules**:
+  - The match result must be placed in `UNDER_REVIEW` / `PENDING` status.
+  - **Financial Safety**: Do NOT credit winnings immediately on single-user claim unless verified by admin or confirmed by the opponent submitting "LOST".
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Result submitted successfully. Under verification.",
+    "data": {
+      "match_id": "6ac5d978b67fb3c853769b3e",
+      "result_status": "UNDER_REVIEW",
+      "prize_amount": 190
+
+Here is the complete, self-contained **Backend Implementation & Architecture Specification Prompt** in English. You can copy and pass this directly to your backend developer or backend AI agent:
+
+***
+
+# ROYAL LUDO — COMPLETE BACKEND IMPLEMENTATION & API CONTRACT SPECIFICATION
+
+> **Target Environment**: Node.js (Express / NestJS) or Python (FastAPI), MongoDB / PostgreSQL, Redis  
+> **Client Frontend**: Royal Ludo Flutter Mobile App  
+> **Base URL**: `https://royalludo-nine.vercel.app/api`  
+> **Mission**: Implement and freeze all database models, business logic rules, atomic financial operations, and API endpoints so that 100% of user flows, automated tests, and multi-player gaming operations work with zero client-side mock data.
+
+---
+
+## 1. Global API Conventions & Standards
+
+### 1.1 Request Headers
+All requests sent by the Flutter client include:
+```http
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer <JWT_ACCESS_TOKEN>   # (Required for protected endpoints)
+X-Device-ID: <DEVICE_UNIQUE_ID>
+X-App-Version: 1.0.0
+```
+
+### 1.2 Standard Response Envelopes
+
+#### Success Envelope (HTTP 200 / 201)
+```json
+{
+  "success": true,
+  "status": true,
+  "message": "Operation completed successfully.",
+  "data": {}
+}
+```
+
+#### Error Envelope (HTTP 400 / 401 / 403 / 404 / 409 / 422 / 500)
+```json
+{
+  "success": false,
+  "status": false,
+  "error": {
+    "code": "INSUFFICIENT_BALANCE",
+    "message": "Your wallet balance is insufficient for this entry fee.",
+    "details": null
+  }
+}
+```
+
+---
+
+## 2. Database Entities & Schemas
+
+### 2.1 Users (`users`)
+```json
+{
+  "_id": "ObjectId / UUID",
+  "mobile": "9876543210",              // Unique, indexed, 10 digits
+  "password_hash": "string",
+  "username": "RoyalKing",             // Unique, min 3 chars
+  "avatar_id": "av1",                  // "av1" .. "av8"
+  "avatar_url": "assets/images/avatars/avatar1.png",
+  "total_balance": 250.0,              // Calculated: deposit + winning + bonus
+  "deposit_balance": 100.0,
+  "winning_balance": 150.0,
+  "bonus_balance": 0.0,
+  "kyc_status": "NONE",                // "NONE", "PENDING", "VERIFIED", "REJECTED"
+  "is_wallet_frozen": false,
+  "status": "ACTIVE",                  // "ACTIVE", "SUSPENDED", "BANNED"
+  "referral_code": "RL99201",          // Unique, indexed
+  "referred_by": null,
+  "total_wins": 14,
+  "total_matches": 22,
+  "created_at": "ISO-8601",
+  "updated_at": "ISO-8601"
+}
+```
+
+### 2.2 Challenge Rooms (`rooms`)
+```json
+{
+  "_id": "ObjectId / UUID",
+  "room_code": "402568",               // Unique 6-digit display code, indexed
+  "creator_id": "Ref(users)",          // Host user ID, indexed
+  "opponent_id": "Ref(users)",         // Joiner user ID, nullable, indexed
+  "entry_fee": 100.0,                  // Min ₹10
+  "prize_pool": 190.0,                 // (entry_fee * 2) - 5% commission
+  "platform_commission": 10.0,
+  "status": "WAITING",                 // "WAITING", "MATCHED", "CODE_SHARED", "PLAYING", "COMPLETED", "EXPIRED", "REFUNDED"
+  "ludo_king_code": null,              // 6 to 8 alphanumeric code
+  "is_code_shared": false,
+  "winner_id": null,
+  "loser_id": null,
+  "expires_at": "ISO-8601",            // created_at + 60s
+  "created_at": "ISO-8601",
+  "updated_at": "ISO-8601"
+}
+```
+
+### 2.3 Support Chat Messages (`chat_messages`)
+```json
+{
+  "_id": "ObjectId / UUID",
+  "user_id": "Ref(users)",             // Player user ID
+  "sender_role": "PLAYER",             // "PLAYER" or "ADMIN"
+  "text": "Hello support, I need help with my deposit.",
+  "is_read": false,
+  "created_at": "ISO-8601"
+}
+```
+
+### 2.4 Wallet Transactions (`wallet_transactions`)
+```json
+{
+  "_id": "ObjectId / UUID",
+  "user_id": "Ref(users)",
+  "title": "Match Joined: Room #402568",
+  "amount": 100.0,
+  "type": "MATCH_JOINED",              // "DEPOSIT", "WITHDRAWAL", "MATCH_JOINED", "MATCH_WON", "REFUND", "BONUS"
+  "is_credit": false,
+  "balance_after": 150.0,
+  "created_at": "ISO-8601"
+}
+```
+
+---
+
+## 3. Module 1: Challenge & Matchmaking State Machine (Top Priority)
+
+### 3.1 Create Challenge Room
+- **Method & Path**: `POST /rooms/create`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "entry_fee": 100.0,
+    "player_count": 2,
+    "is_private": false
+  }
+  ```
+- **Business Rules**:
+  1. Validate `entry_fee >= 10`.
+  2. Validate user's withdrawable + deposit balance `>= entry_fee`. Return `400 INSUFFICIENT_BALANCE` if lower.
+  3. Validate user does not already have an active room with status `WAITING` or `MATCHED`. Return `409 ACTIVE_ROOM_EXISTS`.
+  4. **Atomic Transaction**: Deduct `entry_fee` from wallet, record `MATCH_JOINED` transaction, insert room with `status: "WAITING"` and `expires_at: now() + 60s`.
+- **Response `201 Created`**:
+  ```json
+  {
+    "success": true,
+    "message": "Room created successfully. Waiting for opponent.",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "402568",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "status": "WAITING",
+      "timer_seconds": 60,
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "Monsterrr",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      },
+      "opponent": null
+    }
+  }
+  ```
+
+### 3.2 List Open / Available Rooms
+- **Method & Path**: `GET /rooms` (or `/rooms/available`)
+- **Query Params**: `?entry_fee=100` (optional)
+- **Critical Requirement**:
+  - Filter by `status: "WAITING"` and `expires_at > now()`.
+  - **MUST populate `creator` details** (`username`, `avatar_url`, `id`) so the Flutter lobby renders real usernames and avatars instead of defaulting to "Player".
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "status": true,
+    "data": [
+      {
+        "room_id": "6ac5d978b67fb3c853769b3e",
+        "room_code": "402568",
+        "entry_fee": 100.0,
+        "prize_pool": 190.0,
+        "status": "WAITING",
+        "creator": {
+          "id": "6ac537ff42d441dd11b2c90b",
+          "username": "Monsterrr",
+          "avatar_url": "assets/images/avatars/avatar1.png"
+        },
+        "created_at": "2026-10-11T12:00:00Z"
+      }
+    ]
+  }
+  ```
+
+### 3.3 Join Challenge Room
+- **Method & Path**: `POST /rooms/join`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "room_code": "402568"
+  }
+  ```
+- **Business Rules & Atomic Concurrency**:
+  1. Room must exist and `expires_at > now()`. If expired or absent, return `404 ROOM_NOT_FOUND`.
+  2. Room must be in `WAITING` status and `opponent_id == null`. If already occupied, return `409 ROOM_FULL`.
+  3. Joining player cannot be the creator (`joining_user_id != creator_id`). Return `400 CANNOT_JOIN_OWN_ROOM`.
+  4. Joining player must have sufficient balance. Return `400 INSUFFICIENT_BALANCE`.
+  5. **Atomic Execution**: In a single database transaction, lock the room, assign `opponent_id = user._id`, deduct `entry_fee` from joiner's wallet, record transaction, and update `status = "MATCHED"`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Successfully joined challenge room!",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "402568",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "status": "MATCHED",
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "Monsterrr",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      },
+      "opponent": {
+        "id": "6acb76e56d9cd7c380182f9d",
+        "username": "RoyalKing",
+        "avatar_url": "assets/images/avatars/avatar2.png"
+      }
+    }
+  }
+  ```
+
+### 3.4 Get Room Details (For Polling by Both Players)
+- **Method & Path**: `GET /rooms/:id_or_code`
+- **Auth**: Protected (Bearer Token)
+- **Critical Requirement**: Both `creator` and `opponent` MUST be fully populated objects.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "room_code": "402568",
+      "status": "MATCHED",
+      "entry_fee": 100.0,
+      "prize_pool": 190.0,
+      "ludo_king_code": "849201",
+      "is_code_shared": true,
+      "creator": {
+        "id": "6ac537ff42d441dd11b2c90b",
+        "username": "Monsterrr",
+        "avatar_url": "assets/images/avatars/avatar1.png"
+      },
+      "opponent": {
+        "id": "6acb76e56d9cd7c380182f9d",
+        "username": "RoyalKing",
+        "avatar_url": "assets/images/avatars/avatar2.png"
+      },
+      "created_at": "2026-10-11T12:00:00Z"
+    }
+  }
+  ```
+
+### 3.5 Submit Ludo King Code (Host Only)
+- **Method & Path**: `PUT /rooms/:id_or_code/code`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "ludo_king_code": "849201"
+  }
+  ```
+- **Rules**:
+  1. Only the room's creator can submit.
+  2. Room status must be `MATCHED`.
+  3. Updates `ludo_king_code = code`, `is_code_shared = true`, `status = "CODE_SHARED"`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Ludo King room code set.",
+    "data": {
+      "room_id": "6ac5d978b67fb3c853769b3e",
+      "ludo_king_code": "849201",
+      "status": "CODE_SHARED"
+    }
+  }
+  ```
+
+### 3.6 Cancel / Expire Room & Refund
+- **Method & Path**: `DELETE /rooms/:id_or_code`
+- **Auth**: Protected (Bearer Token)
+- **Rules**: Can only cancel if `status == "WAITING"` and `opponent == null`. Atomically refunds `entry_fee` to creator, creates `REFUND` transaction record, and sets `status = "REFUNDED"`.
+
+---
+
+## 4. Module 2: Admin Support Chat APIs
+
+### 4.1 Fetch Messages
+- **Method & Path**: `GET /support/chat/messages`
+- **Auth**: Protected (Bearer Token)
+- **Rules**: Return all chat messages between authenticated user and Admin, sorted chronologically.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "status": true,
+    "data": {
+      "messages": [
+        {
+          "id": "msg_001",
+          "text": "Hello, my deposit is pending.",
+          "sender_role": "PLAYER",
+          "is_player": true,
+          "is_read": true,
+          "created_at": "2026-10-11T12:05:00Z"
+        },
+        {
+          "id": "msg_002",
+          "text": "Hello! Please allow 10-15 minutes for verification.",
+          "sender_role": "ADMIN",
+          "is_player": false,
+          "is_read": true,
+          "created_at": "2026-10-11T12:06:00Z"
+        }
+      ]
+    }
+  }
+  ```
+
+### 4.2 Send Message
+- **Method & Path**: `POST /support/chat/messages`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "text": "Thank you, please check UTR 123456789012"
+  }
+  ```
+- **Rules**: Max 500 characters. Validate `text.trim().isNotEmpty`. Save with `sender_role: "PLAYER"` and `is_read: false`.
+- **Response `201 Created`**:
+  ```json
+  {
+    "success": true,
+    "message": "Message sent.",
+    "data": {
+      "id": "msg_003",
+      "text": "Thank you, please check UTR 123456789012",
+      "sender_role": "PLAYER",
+      "is_player": true,
+      "created_at": "2026-10-11T12:07:00Z"
+    }
+  }
+  ```
+
+### 4.3 Chat Unread Count & Mark-Read
+- **Method & Path**: `GET /support/chat/unread-count` -> returns `{ "unread_count": 0 }`
+- **Method & Path**: `POST /support/chat/mark-read` -> marks all Admin messages for this user as `is_read: true`.
+
+---
+
+## 5. Module 3: Wallet, Deposit, Withdrawal & Admin Approval Workflows
+
+### 5.1 Initiate Deposit
+- **Method & Path**: `POST /wallet/deposit/initiate`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "amount": 100.0
+  }
+  ```
+- **Rules**: Validate `amount >= 50`. Generate `deposit_id` (`DEP_xxxx`). Return admin UPI ID and QR code URL with a 10-minute expiry window.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "deposit_id": "DEP_82f9d_259530",
+      "amount": 100.0,
+      "admin_upi_id": "royalludo@upi",
+      "admin_qr_image_url": "https://cdn.royalludo.com/qr/upi.png",
+      "status": "INITIATED",
+      "expires_at": "2026-10-11T12:30:00Z"
+    }
+  }
+  ```
+
+### 5.2 Submit UTR Number
+- **Method & Path**: `POST /wallet/deposit/submit-utr`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "deposit_id": "DEP_82f9d_259530",
+    "utr_number": "123456789012"
+  }
+  ```
+- **Rules**:
+  1. Validate `utr_number` is 12 digits.
+  2. Reject duplicate UTR numbers across all users. Return `400 DUPLICATE_UTR`.
+  3. Mark deposit status as `PENDING_APPROVAL`.
+  4. **DO NOT credit user balance prematurely**.
+
+### 5.3 Admin Deposit Approval & Rejection (Fix Required)
+- **Endpoint 1**: `POST /admin/deposits/:depositId/approve`
+- **Endpoint 2**: `POST /admin/deposits/:depositId/reject`
+- **Fix Required**: Ensure `:depositId` matches both MongoDB `_id` and formatted ID (`DEP_xxxx`).
+- **Atomic Approval Action**:
+  1. Verify deposit is currently in `PENDING_APPROVAL` status.
+  2. Transition deposit to `APPROVED`.
+  3. Atomically add `amount` to `users.deposit_balance` and `users.total_balance`.
+  4. Create `wallet_transactions` record (`type: "DEPOSIT"`, `is_credit: true`).
+  5. Prevent duplicate approvals (subsequent requests must return `400 ALREADY_PROCESSED`).
+
+### 5.4 Initiate Withdrawal
+- **Method & Path**: `POST /wallet/withdraw/initiate`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "amount": 150.0,
+    "withdrawal_method": "UPI",
+    "upi_id": "player@upi"
+  }
+  ```
+- **Rules**:
+  1. Validate `amount >= 100`.
+  2. Validate user `winning_balance >= amount`. Return `400 INSUFFICIENT_BALANCE`.
+  3. Validate `users.is_wallet_frozen == false`.
+  4. Deduct `amount` from `winning_balance` immediately to prevent double-spend, mark status `PENDING_APPROVAL`.
+  5. If admin rejects withdrawal via `POST /admin/withdrawals/:id/reject`, refund amount back to `winning_balance`.
+
+---
+
+## 6. Module 4: Matches & Result Submission
+
+### 6.1 Submit Match Result
+- **Method & Path**: `POST /matches/submit-result`
+- **Auth**: Protected (Bearer Token)
+- **Request Body**:
+  ```json
+  {
+    "match_id": "6ac5d978b67fb3c853769b3e",
+    "claimed_result": "WON",
+    "screenshot_url": "uploads/proofs/proof_1.png"
+  }
+  ```
+- **Rules**:
+  1. Valid values: `WON`, `LOST`, `CANCELLED`.
+  2. Do NOT immediately credit winnings when a player claims "WON". Place match result in `UNDER_REVIEW`.
+  3. Automatic win award only occurs if opponent submits `LOST` or Admin approves proof in panel.
+  4. Upon verification, credit `prize_pool` to winner's `winning_balance` and increment `total_wins`.
+
+---
+
+## 7. Module 5: User Profile & Dynamic Statistics
+
+### 7.1 Get Profile
+- **Method & Path**: `GET /user/profile`
+- **Auth**: Protected (Bearer Token)
+- **Critical Requirement**: Must return dynamic counts for `total_matches` and `total_wins`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "user": {
+        "id": "6acb76e56d9cd7c380182f9d",
+        "username": "RoyalKing",
+        "mobile": "9876543210",
+        "avatar_id": "av1",
+        "avatar_url": "assets/images/avatars/avatar1.png",
+        "total_balance": 250.0,
+        "deposit_balance": 100.0,
+        "winning_balance": 150.0,
+        "bonus_balance": 0.0,
+        "total_wins": 14,
+        "total_matches": 22,
+        "kyc_status": "NONE",
+        "referral_code": "RL99201"
+      }
+    }
+  }
+  ```
+
+---
+
+## 8. Final Deliverables Checklist for Backend
+
+1. [ ] **Matchmaking**: `POST /rooms/create`, `GET /rooms`, `POST /rooms/join`, `GET /rooms/:id`, `PUT /rooms/:id/code` implemented with full creator and opponent object population.
+2. [ ] **Support Chat**: `GET /support/chat/messages` and `POST /support/chat/messages` storing messages and returning `sender_role`.
+3. [ ] **Admin Approval**: `POST /admin/deposits/:depositId/approve` fixed (resolving 404 issue) and balance credited atomically.
+4. [ ] **Withdrawals**: `POST /wallet/withdraw/initiate` enforcing minimum ₹100 and winning balance limits.
+5. [ ] **Result Verification**: `POST /matches/submit-result` saving proof and preventing premature balance additions.
+6. [ ] **Profile Stats**: `total_matches` and `total_wins` calculated and returned dynamically in `GET /user/profile`.
+
+***

@@ -23,15 +23,6 @@ const userSchema = new mongoose.Schema({
     lost: { type: Number, default: 0 },
     totalWinningsPaise: { type: Number, default: 0 }
   },
-  kycStatus: { type: String, enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'], default: 'NONE', index: true },
-  kycDetails: {
-    aadhaarNumber: { type: String, default: '' },
-    panNumber: { type: String, default: '' },
-    selfieImage: { type: String, default: '' },
-    documentUrl: { type: String, default: '' },
-    submittedAt: { type: Date, default: null },
-    rejectedReason: { type: String, default: '' }
-  },
   riskScore: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW', index: true },
   isWalletFrozen: { type: Boolean, default: false, index: true },
   failedLoginAttempts: { type: Number, default: 0 },

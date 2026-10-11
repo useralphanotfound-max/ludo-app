@@ -97,8 +97,9 @@ export async function POST(req) {
 
     // If full, start match
     let match = null;
-    if (room.joinedPlayers.length >= room.playerCount) {
-      room.status = 'IN_PROGRESS';
+    const isFull = room.joinedPlayers.length >= room.playerCount;
+    if (isFull) {
+      room.status = 'MATCHED';
       
       const allPlayers = await User.find({ _id: { $in: room.joinedPlayers } }).lean();
       const commPct = 10;
@@ -145,17 +146,35 @@ export async function POST(req) {
 
     await room.save();
 
+    // Populate creator and opponent
+    const creatorUser = await User.findById(room.creatorId).select('username avatarId avatarUrl').lean();
+    const opponentUser = user;
+
     return NextResponse.json({
       success: true,
       status: true,
-      message: room.status === 'IN_PROGRESS' ? `Match started! All ${room.playerCount} players matched.` : 'Joined room successfully.',
+      message: 'Successfully joined challenge room!',
       data: {
         room_id: room._id.toString(),
         roomId: room._id.toString(),
         room_code: room.roomCode,
         roomCode: room.roomCode,
+        entry_fee: room.entryFee,
+        prize_pool: room.prizePool,
         status: room.status,
         joined_players_count: room.joinedPlayers.length,
+        creator: {
+          id: creatorUser?._id?.toString() || room.creatorId.toString(),
+          username: creatorUser?.username || 'HostPlayer',
+          avatar_id: creatorUser?.avatarId || 'av1',
+          avatar_url: creatorUser?.avatarUrl || 'assets/images/avatars/avatar1.png'
+        },
+        opponent: {
+          id: opponentUser._id.toString(),
+          username: opponentUser.username || 'JoinerPlayer',
+          avatar_id: opponentUser.avatarId || 'av2',
+          avatar_url: opponentUser.avatarUrl || 'assets/images/avatars/avatar2.png'
+        },
         match_id: match ? match._id.toString() : null,
         matchId: match ? match._id.toString() : null
       }

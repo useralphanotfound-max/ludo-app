@@ -52,6 +52,7 @@ export async function GET(req) {
         bonus_balance: wallet.bonusBalance || 0,
         pending_balance: wallet.pendingBalance || 0,
         total_played: gamesPlayed,
+        total_matches: gamesPlayed,
         total_matches_played: gamesPlayed,
         total_wins: wins,
         win_percentage: winRate,
@@ -63,8 +64,8 @@ export async function GET(req) {
           win_rate: winRate
         },
         referral_code: user.referralCode,
-        is_kyc_verified: user.kycStatus === 'VERIFIED',
-        kyc_status: user.kycStatus || 'NONE',
+        is_kyc_verified: true,
+        kyc_status: 'NOT_REQUIRED',
         created_at: user.createdAt
       }
     }, { status: 200 });

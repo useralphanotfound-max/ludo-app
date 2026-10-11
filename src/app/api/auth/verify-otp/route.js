@@ -102,7 +102,7 @@ export async function POST(req) {
           deposit_balance: wallet.depositBalance || 0,
           winning_balance: wallet.winningBalance || 0,
           bonus_balance: wallet.bonusBalance || 0,
-          kyc_status: user.kycStatus === 'VERIFIED' ? 'APPROVED' : (user.kycStatus || 'NOT_SUBMITTED'),
+          kyc_status: 'NOT_REQUIRED',
           referral_code: user.referralCode
         }
       }

@@ -1,38 +1,18 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { getAuthUser } from '@/lib/authHelper';
 
-export async function GET(req) {
-  try {
-    await connectDB();
-    const user = await getAuthUser(req);
-    if (!user) {
-      return NextResponse.json({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
-      }, { status: 401 });
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    status: true,
+    message: 'KYC verification is not required on this platform.',
+    data: {
+      is_kyc_required: false,
+      is_verified: true,
+      kyc_status: 'NOT_REQUIRED',
+      submitted_at: null,
+      rejected_reason: '',
+      aadhaar_masked: null,
+      pan_masked: null
     }
-
-    const kycDetails = user.kycDetails || {};
-
-    return NextResponse.json({
-      success: true,
-      status: true,
-      data: {
-        kyc_status: user.kycStatus || 'NONE',
-        is_verified: user.kycStatus === 'VERIFIED',
-        submitted_at: kycDetails.submittedAt || null,
-        rejected_reason: kycDetails.rejectedReason || '',
-        aadhaar_masked: kycDetails.aadhaarNumber ? `XXXX-XXXX-${kycDetails.aadhaarNumber.slice(-4)}` : null,
-        pan_masked: kycDetails.panNumber ? `XXXXX${kycDetails.panNumber.slice(-4)}` : null
-      }
-    }, { status: 200 });
-
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: { code: 'SERVER_ERROR', message: error.message }
-    }, { status: 500 });
-  }
+  }, { status: 200 });
 }

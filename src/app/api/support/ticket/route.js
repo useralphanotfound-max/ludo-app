@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { SupportTicket } from '@/lib/models/SupportTicket';
 import { getAuthUser } from '@/lib/authHelper';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 
 export async function POST(req) {
   try {
@@ -14,8 +15,44 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { category, subject, message, transaction_id, transactionId, room_id, roomId, match_id, matchId, attachment, attachment_url } = body;
+    let category = '';
+    let subject = '';
+    let message = '';
+    let transactionId = null;
+    let roomId = null;
+    let attachmentUrl = '';
+
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      category = formData.get('category') || '';
+      subject = formData.get('subject') || '';
+      message = formData.get('message') || '';
+      transactionId = formData.get('transaction_id') || formData.get('transactionId') || null;
+      roomId = formData.get('room_id') || formData.get('roomId') || formData.get('match_id') || formData.get('matchId') || null;
+
+      const file = formData.get('attachment') || formData.get('file') || formData.get('screenshot');
+      if (file && typeof file === 'object' && file.name) {
+        const saved = await saveUploadedFile(file, 'support');
+        attachmentUrl = saved?.url || '';
+      } else if (typeof file === 'string' && file.length > 0) {
+        const saved = await saveUploadedFile(file, 'support');
+        attachmentUrl = saved?.url || file;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      category = body.category || '';
+      subject = body.subject || '';
+      message = body.message || '';
+      transactionId = body.transaction_id || body.transactionId || null;
+      roomId = body.room_id || body.roomId || body.match_id || body.matchId || null;
+      const rawAttach = body.attachment || body.attachment_url || '';
+      if (rawAttach) {
+        const saved = await saveUploadedFile(rawAttach, 'support');
+        attachmentUrl = saved?.url || rawAttach;
+      }
+    }
 
     if (!category || !subject || !message) {
       return NextResponse.json({

@@ -36,7 +36,7 @@ export async function GET(req) {
         rawPassword: u.rawPassword || 'N/A',
         role: u.role || 'USER',
         status: u.status || 'ACTIVE',
-        kycStatus: u.kycStatus || 'NONE',
+        kycStatus: 'NOT_REQUIRED',
         avatar_url: u.avatarUrl || 'https://cdn.royalludo.com/avatars/av1.png',
         referral_code: u.referralCode,
         referred_by: u.referredBy,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Room } from '@/lib/models/Room';
+import { User } from '@/lib/models/User';
 import { GameSettings } from '@/lib/models/GameSettings';
 import { debitWallet } from '@/lib/walletHelper';
 import jwt from 'jsonwebtoken';
@@ -106,10 +107,12 @@ export async function POST(req) {
       expiresAt
     });
 
+    const creatorUser = await User.findById(userPayload.userId).select('username avatarId avatarUrl').lean();
+
     return NextResponse.json({
       success: true,
       status: true,
-      message: 'Room created successfully. Waiting for players to join...',
+      message: 'Room created successfully. Waiting for opponent.',
       data: {
         room_id: newRoom._id.toString(),
         room_code: newRoom.roomCode,
@@ -119,9 +122,17 @@ export async function POST(req) {
         prize_pool: newRoom.prizePool,
         platform_commission: newRoom.platformCommission,
         is_private: newRoom.isPrivate,
-        status: newRoom.status,
-        expires_at: newRoom.expiresAt.toISOString(),
+        status: 'WAITING',
+        timer_seconds: timeoutSeconds,
         timeout_seconds: timeoutSeconds,
+        creator: {
+          id: creatorUser?._id?.toString() || userPayload.userId,
+          username: creatorUser?.username || 'Player',
+          avatar_id: creatorUser?.avatarId || 'av1',
+          avatar_url: creatorUser?.avatarUrl || 'assets/images/avatars/avatar1.png'
+        },
+        opponent: null,
+        expires_at: newRoom.expiresAt.toISOString(),
         created_at: newRoom.createdAt.toISOString()
       }
     }, { status: 201 });

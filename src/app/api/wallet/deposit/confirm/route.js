@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { Deposit } from '@/lib/models/Deposit';
 import { getAuthUser } from '@/lib/authHelper';
 import { creditWallet } from '@/lib/walletHelper';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 
 export async function POST(req) {
   try {
@@ -30,19 +31,22 @@ export async function POST(req) {
 
       const file = formData.get('proof_image') || formData.get('proofImage') || formData.get('screenshot') || formData.get('file');
       if (file && typeof file === 'object' && file.name) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const base64 = buffer.toString('base64');
-        const mimeType = file.type || 'image/png';
-        proofImg = `data:${mimeType};base64,${base64}`;
+        const saved = await saveUploadedFile(file, 'payment_screenshots');
+        proofImg = saved?.url || null;
       } else if (typeof file === 'string' && file.length > 0) {
-        proofImg = file;
+        const saved = await saveUploadedFile(file, 'payment_screenshots');
+        proofImg = saved?.url || file;
       }
     } else {
       const body = await req.json().catch(() => ({}));
       depId = body.transaction_id || body.transactionId || body.deposit_id || body.depositId;
       utr = (body.utr_number || body.utrNumber || body.gateway_payment_id || '').toString().trim();
       depositAmount = Number(body.amount || 0);
-      proofImg = body.proof_image_url || body.proofImageUrl || body.screenshot || null;
+      const rawProof = body.proof_image_url || body.proofImageUrl || body.screenshot || null;
+      if (rawProof) {
+        const saved = await saveUploadedFile(rawProof, 'payment_screenshots');
+        proofImg = saved?.url || rawProof;
+      }
     }
 
     if (!utr || utr.length < 6) {
