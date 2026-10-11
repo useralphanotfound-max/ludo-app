@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Headphones, Users, CreditCard, Gift, Trophy, ClipboardList,
   Pencil, History, Play, Wallet as WalletIcon, User, RefreshCw, X, Check,
-  AlertCircle, Plus, BookOpen, Tag, LogOut, ChevronRight
+  AlertCircle, Plus, BookOpen, Tag, LogOut, ChevronRight, QrCode, Copy
 } from 'lucide-react';
 import CreateRoomScreen from './CreateRoomScreen';
 import RoomsTab from './RoomsTab';
@@ -36,8 +36,10 @@ export default function HomeScreen({
   const [withdrawUpi, setWithdrawUpi] = useState('user@upi');
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
-  // UPI Info state (for deposit modal)
+  // UPI Info & Payment Methods state (for deposit modal)
   const [upiInfo, setUpiInfo] = useState(null);
+  const [selectedMethodIndex, setSelectedMethodIndex] = useState(0);
+  const [copiedUpi, setCopiedUpi] = useState(false);
 
   // Support ticket state
   const [ticketCategory, setTicketCategory] = useState('payment');
@@ -86,10 +88,14 @@ export default function HomeScreen({
 
     try {
       if (modalName === 'deposit') {
-        // Fetch live UPI info for deposit
+        // Fetch live UPI info & multiple payment methods for deposit
         const res = await fetch('/api/wallet/upi-info?t=' + Date.now());
         const data = await res.json();
-        if (data.success) setUpiInfo(data.data);
+        if (data.success) {
+          setUpiInfo(data.data);
+          setSelectedMethodIndex(0);
+          setCopiedUpi(false);
+        }
       } else if (modalName === 'referrals') {
         const res = await authFetch('/api/referral/info');
         const data = await res.json();
@@ -143,9 +149,15 @@ export default function HomeScreen({
     setActionSuccess('');
 
     try {
+      const activeMethod = upiInfo?.methods?.[selectedMethodIndex] || (upiInfo?.methods && upiInfo.methods[0]);
       const formData = new FormData();
       formData.append('amount', depositAmount);
       formData.append('utr_number', utrNumber.trim());
+      if (activeMethod) {
+        formData.append('method_id', activeMethod.id || activeMethod._id || '');
+        formData.append('payment_method', activeMethod.type || 'UPI');
+        formData.append('method_name', activeMethod.name || 'UPI Direct');
+      }
       if (depositProofFile) {
         formData.append('proof_image', depositProofFile);
       } else if (depositProofImage) {
@@ -623,70 +635,181 @@ export default function HomeScreen({
 
             {/* DEPOSIT MODAL */}
             {activeModal === 'deposit' && (
-              <div>
-                <h3 className="text-xl font-bold mb-1">UPI Deposit</h3>
-                <p className="text-xs text-slate-400 mb-4">Pay via UPI & submit UTR to credit your wallet instantly.</p>
+              (() => {
+                const paymentMethods = upiInfo?.methods || [];
+                const activeMethod = paymentMethods[selectedMethodIndex] || {
+                  name: 'UPI Direct Transfer',
+                  type: 'UPI',
+                  upi_id: upiInfo?.upi_id || 'royalludo@upi',
+                  qr_image_url: upiInfo?.qr_code || '',
+                  payee_name: upiInfo?.payee_name || 'Royal Ludo Gaming'
+                };
+                const isQr = activeMethod.type === 'QR_CODE' || (!activeMethod.upi_id && activeMethod.qr_image_url);
+                const qrDisplay = activeMethod.qr_image_url || (activeMethod.upi_id ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${encodeURIComponent(activeMethod.upi_id)}&pn=${encodeURIComponent(activeMethod.payee_name || 'Royal Ludo')}&cu=INR` : upiInfo?.qr_code);
 
-                <div className="bg-[#0d111d] p-4 rounded-2xl border border-slate-800 mb-4 text-center">
-                  <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block mb-1">ADMIN UPI ID</span>
-                  <span className="text-base font-extrabold text-amber-300 block mb-3">royalludo@upi</span>
-                  <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl flex items-center justify-center">
-                    <div className="text-slate-950 text-xs font-bold text-center">
-                      [QR CODE]
-                      <br />Scan to Pay
-                    </div>
-                  </div>
-                </div>
-
-                <form onSubmit={handleDepositSubmit} className="space-y-4">
+                return (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Deposit Amount (₹)</label>
-                    <input
-                      type="number"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#0a0d17] border border-slate-700 rounded-xl text-white font-bold text-base focus:outline-none focus:border-yellow-400"
-                      min="10"
-                      required
-                    />
-                  </div>
+                    <h3 className="text-xl font-bold mb-1">Add Money to Wallet</h3>
+                    <p className="text-xs text-slate-400 mb-3">Select your deposit method, make payment, and submit UTR.</p>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">UTR / Transaction ID</label>
-                    <input
-                      type="text"
-                      value={utrNumber}
-                      onChange={(e) => setUtrNumber(e.target.value)}
-                      placeholder="12-digit UTR Number"
-                      className="w-full px-4 py-3 bg-[#0a0d17] border border-slate-700 rounded-xl text-white font-bold text-sm focus:outline-none focus:border-yellow-400"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Upload Payment Screenshot</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleScreenshotChange}
-                      className="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-900/50 file:text-purple-300 hover:file:bg-purple-900 bg-[#0a0d17] border border-slate-700 rounded-xl cursor-pointer"
-                    />
-                    {depositProofPreview && (
-                      <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-yellow-400/50">
-                        <img src={depositProofPreview} alt="Screenshot Proof" className="w-full h-full object-cover" />
+                    {/* Multiple Payment Methods Selector Tabs */}
+                    {paymentMethods.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-none">
+                        {paymentMethods.map((m, idx) => (
+                          <button
+                            key={m.id || m._id || idx}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMethodIndex(idx);
+                              setCopiedUpi(false);
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                              selectedMethodIndex === idx
+                                ? 'bg-amber-400/20 text-yellow-300 border-amber-400/50 shadow-md'
+                                : 'bg-[#0d111d] text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            {m.type === 'QR_CODE' ? <QrCode className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
+                            {m.name || `Method ${idx + 1}`}
+                          </button>
+                        ))}
                       </div>
                     )}
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={submittingDeposit || !utrNumber}
-                    className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg hover:scale-105 disabled:opacity-50 transition-all"
-                  >
-                    {submittingDeposit ? 'Submitting Request...' : 'Submit UTR & Deposit Request'}
-                  </button>
-                </form>
-              </div>
+                    {/* Active Method Details Box */}
+                    <div className="bg-[#0d111d] p-4 rounded-2xl border border-slate-800 mb-4 text-center">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                          {isQr ? <QrCode className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
+                          {activeMethod.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          Payee: <strong className="text-white">{activeMethod.payee_name || upiInfo?.payee_name || 'Royal Ludo'}</strong>
+                        </span>
+                      </div>
+
+                      {/* QR Code Image */}
+                      {qrDisplay && (
+                        <div className="mb-3">
+                          <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl flex items-center justify-center shadow-lg border border-slate-200">
+                            <img
+                              src={qrDisplay}
+                              alt="Scan QR to Pay"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1 block">Scan QR Code using PhonePe / GooglePay / Paytm</span>
+                        </div>
+                      )}
+
+                      {/* UPI ID Pill with Copy Button */}
+                      {activeMethod.upi_id && (
+                        <div className="bg-[#080b14] border border-slate-700/80 rounded-xl px-3 py-2 flex items-center justify-between">
+                          <div className="text-left">
+                            <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">ADMIN UPI ID</span>
+                            <span className="text-xs font-extrabold text-amber-300 font-mono">{activeMethod.upi_id}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(activeMethod.upi_id);
+                              setCopiedUpi(true);
+                              setTimeout(() => setCopiedUpi(false), 2000);
+                            }}
+                            className="px-2.5 py-1 bg-amber-400/20 text-yellow-300 hover:bg-amber-400/30 border border-amber-400/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                          >
+                            {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedUpi ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+
+                      {activeMethod.instructions && (
+                        <p className="text-[10px] text-slate-400 mt-2 text-left">
+                          {activeMethod.instructions}
+                        </p>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleDepositSubmit} className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-xs font-semibold text-slate-300">Deposit Amount (₹)</label>
+                          <span className="text-[10px] text-slate-400">Min ₹{activeMethod.min_amount || upiInfo?.min_deposit || 50}</span>
+                        </div>
+
+                        {/* Quick preset chips */}
+                        <div className="grid grid-cols-4 gap-1.5 mb-2">
+                          {['100', '200', '500', '1000'].map((amt) => (
+                            <button
+                              key={amt}
+                              type="button"
+                              onClick={() => setDepositAmount(amt)}
+                              className={`py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                depositAmount === amt
+                                  ? 'bg-amber-400 text-slate-950 border-amber-400'
+                                  : 'bg-[#0a0d17] text-slate-300 border-slate-700 hover:border-slate-600'
+                              }`}
+                            >
+                              ₹{amt}
+                            </button>
+                          ))}
+                        </div>
+
+                        <input
+                          type="number"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-[#0a0d17] border border-slate-700 rounded-xl text-white font-bold text-base focus:outline-none focus:border-yellow-400"
+                          min="10"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">UTR / Transaction ID *</label>
+                        <input
+                          type="text"
+                          value={utrNumber}
+                          onChange={(e) => setUtrNumber(e.target.value)}
+                          placeholder="Enter 12-digit UPI UTR number"
+                          className="w-full px-4 py-2.5 bg-[#0a0d17] border border-slate-700 rounded-xl text-white font-bold text-sm focus:outline-none focus:border-yellow-400 font-mono"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Upload Payment Screenshot Proof</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleScreenshotChange}
+                          className="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-900/50 file:text-purple-300 hover:file:bg-purple-900 bg-[#0a0d17] border border-slate-700 rounded-xl cursor-pointer"
+                        />
+                        {depositProofPreview && (
+                          <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-yellow-400/50">
+                            <img src={depositProofPreview} alt="Screenshot Proof" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submittingDeposit || !utrNumber}
+                        className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg hover:scale-105 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                      >
+                        {submittingDeposit ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" /> Submitting Request...
+                          </>
+                        ) : (
+                          `Submit Deposit Request (₹${depositAmount})`
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                );
+              })()
             )}
 
             {/* WITHDRAW MODAL */}

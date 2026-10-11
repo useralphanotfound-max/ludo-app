@@ -36,8 +36,8 @@ export async function GET(req) {
       gameCode: r.roomCode || `Live Match #${4890 + i}`,
       player1: r.creatorId?.username || r.joinedPlayers?.[0]?.username || 'kingplayer',
       player2: r.joinedPlayers?.[1]?.username || 'ludomaster',
-      entryFeeRs: Math.round((r.entryFee || 50000) / 100),
-      prizePoolRs: Math.round(((r.entryFee || 50000) * 1.8) / 100),
+      entryFeeRs: Math.round(r.entryFee || 100),
+      prizePoolRs: Math.round(r.prizePool || ((r.entryFee || 100) * 1.8)),
       duration: '6m 14s',
       status: r.status === 'IN_PROGRESS' ? 'Playing' : r.status || 'Playing',
       totalDiceRolls: 34

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const gameSettingsSchema = new mongoose.Schema({
   key: { type: String, default: 'global_settings', unique: true },
-  roomTimeoutSeconds: { type: Number, default: 45 },
+  roomTimeoutSeconds: { type: Number, default: 180 },
   useDefaultOtp: { type: Boolean, default: true },
   defaultOtpCode: { type: String, default: '1234' },
   otpLength: { type: Number, default: 4 },

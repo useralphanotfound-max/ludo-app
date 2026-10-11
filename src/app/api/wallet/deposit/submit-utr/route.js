@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Deposit } from '@/lib/models/Deposit';
+import { saveUploadedFile } from '@/lib/uploadHelper';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
@@ -27,11 +28,37 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { deposit_id, depositId, utr_number, utrNumber, transaction_id } = body;
+    let depId = '';
+    let cleanUtr = '';
+    let proofImg = null;
 
-    const depId = deposit_id || depositId;
-    const cleanUtr = (utr_number || utrNumber || transaction_id || '').toString().trim();
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      depId = (formData.get('deposit_id') || formData.get('depositId') || formData.get('transaction_id') || '').toString().trim();
+      cleanUtr = (formData.get('utr_number') || formData.get('utrNumber') || formData.get('transaction_id') || '').toString().trim();
+
+      const file = formData.get('proof_image') || formData.get('proofImage') || formData.get('screenshot') || formData.get('file');
+      if (file && typeof file === 'object' && file.name) {
+        const saved = await saveUploadedFile(file, 'payment_screenshots');
+        proofImg = saved?.url || null;
+      } else if (typeof file === 'string' && file.length > 0) {
+        const saved = await saveUploadedFile(file, 'payment_screenshots');
+        proofImg = saved?.url || file;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      const { deposit_id, depositId, utr_number, utrNumber, transaction_id, proof_image_url, proofImageUrl, screenshot } = body;
+      depId = (deposit_id || depositId).toString().trim();
+      cleanUtr = (utr_number || utrNumber || transaction_id || '').toString().trim();
+
+      const rawProof = proof_image_url || proofImageUrl || screenshot || null;
+      if (rawProof) {
+        const saved = await saveUploadedFile(rawProof, 'payment_screenshots');
+        proofImg = saved?.url || rawProof;
+      }
+    }
 
     if (!depId) {
       return NextResponse.json({
@@ -83,6 +110,7 @@ export async function POST(req) {
     // Check if UTR has already been submitted in another deposit
     const existingUtr = await Deposit.findOne({
       utrNumber: cleanUtr,
+      _id: { $ne: deposit._id },
       status: { $in: ['PENDING_APPROVAL', 'APPROVED'] }
     });
 
@@ -94,6 +122,9 @@ export async function POST(req) {
     }
 
     deposit.utrNumber = cleanUtr;
+    if (proofImg) {
+      deposit.proofImageUrl = proofImg;
+    }
     deposit.status = 'PENDING_APPROVAL';
     await deposit.save();
 
@@ -104,6 +135,7 @@ export async function POST(req) {
         deposit_id: deposit.depositId,
         utr_number: deposit.utrNumber,
         amount: deposit.amount,
+        proof_image_url: deposit.proofImageUrl,
         status: 'PENDING_APPROVAL',
         submitted_at: deposit.updatedAt.toISOString()
       }

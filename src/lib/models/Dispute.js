@@ -8,18 +8,18 @@ const disputeSchema = new mongoose.Schema({
   player1: {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     username: { type: String },
-    claimedResult: { type: String, enum: ['WON', 'LOST', 'NONE'], default: 'WON' },
+    claimedResult: { type: String, enum: ['WON', 'LOST', 'CANCELLED', 'NONE'], default: 'WON' },
     screenshotUrl: { type: String, default: '' },
     submittedAt: { type: Date, default: Date.now }
   },
   player2: {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     username: { type: String },
-    claimedResult: { type: String, enum: ['WON', 'LOST', 'NONE'], default: 'WON' },
+    claimedResult: { type: String, enum: ['WON', 'LOST', 'CANCELLED', 'NONE'], default: 'WON' },
     screenshotUrl: { type: String, default: '' },
     submittedAt: { type: Date, default: Date.now }
   },
-  status: { type: String, enum: ['PENDING_ADMIN_REVIEW', 'RESOLVED_P1_WIN', 'RESOLVED_P2_WIN', 'REFUNDED', 'REJECTED'], default: 'PENDING_ADMIN_REVIEW', index: true },
+  status: { type: String, enum: ['PENDING_ADMIN_REVIEW', 'RESOLVED_P1_WIN', 'RESOLVED_P2_WIN', 'REFUNDED', 'REJECTED', 'CANCELLED'], default: 'PENDING_ADMIN_REVIEW', index: true },
   resolvedByAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   resolvedByAdminUsername: { type: String, default: '' },
   adminNotes: { type: String, default: '' },

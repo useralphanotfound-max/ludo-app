@@ -20,8 +20,8 @@ export async function GET(req) {
       
       const p1Name = d.player1?.username || matchPlayers[0]?.username || 'Player 1';
       const p2Name = d.player2?.username || matchPlayers[1]?.username || 'Player 2';
-      const entryFeeRs = match.entryFee ? Math.round(match.entryFee / 100) : (d.entryFeeRs || 500);
-      const prizePoolRs = match.prizePool ? Math.round(match.prizePool / 100) : (d.prizePoolRs || 900);
+      const entryFeeRs = match.entryFee ? Math.round(match.entryFee) : (d.entryFeeRs || 500);
+      const prizePoolRs = match.prizePool ? Math.round(match.prizePool) : (d.prizePoolRs || 900);
 
       return {
         ...d,

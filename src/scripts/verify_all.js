@@ -52,6 +52,14 @@ async function runVerification() {
     'src/app/api/wallet/deposit/confirm/route.js',
     'src/app/api/wallet/withdraw/initiate/route.js',
     'src/app/api/matches/submit-result/route.js',
+    'src/app/api/admin/payment-methods/route.js',
+    'src/app/api/admin/payment-methods/[id]/route.js',
+    'src/app/api/wallet/payment-methods/route.js',
+    'src/app/api/wallet/upi-info/route.js',
+    'src/app/api/rooms/[id]/start/route.js',
+    'src/app/api/rooms/[id]/check-status/route.js',
+    'src/app/api/rooms/[id]/expire/route.js',
+    'src/app/api/rooms/[id]/cancel/route.js',
     'src/app/api/user/profile/route.js',
     'src/app/api/user/me/route.js'
   ];

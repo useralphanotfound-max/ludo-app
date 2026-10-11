@@ -29,7 +29,8 @@ import {
   ChevronRight,
   ClipboardList,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 import { getRolePermissions, sanitizePermissions, canAccessModule } from '@/lib/rbac';
 
@@ -37,6 +38,7 @@ const iconMap = {
   dashboard: LayoutDashboard,
   users: Users,
   wallets: Wallet,
+  'payment-methods': QrCode,
   deposits: ArrowDownLeft,
   withdrawals: ArrowUpRight,
   transactions: Receipt,
@@ -68,6 +70,7 @@ const NAVIGATION_GROUPS = [
     title: 'PAYMENTS & MONEY',
     items: [
       { id: 'wallets', label: 'User Balances', path: '/admin/wallets', permission: 'wallets' },
+      { id: 'payment-methods', label: 'Payment & QR Methods', path: '/admin/payment-methods', permission: 'deposits' },
       { id: 'deposits', label: 'Deposits', path: '/admin/deposits', permission: 'deposits', badgeKey: 'deposits', badgeColor: 'emerald' },
       { id: 'withdrawals', label: 'Withdrawals', path: '/admin/withdrawals', permission: 'withdrawals', badgeKey: 'withdrawals', badgeColor: 'rose' },
       { id: 'transactions', label: 'Transactions', path: '/admin/transactions', permission: 'transactions' }

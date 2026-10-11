@@ -8,6 +8,7 @@ import { Transaction } from '@/lib/models/Transaction';
 import { Dispute } from '@/lib/models/Dispute';
 import { getAuthUser } from '@/lib/authHelper';
 import { saveUploadedFile } from '@/lib/uploadHelper';
+import mongoose from 'mongoose';
 
 export async function POST(req) {
   try {
@@ -35,26 +36,84 @@ export async function POST(req) {
       }
     }
 
-    const matchId = body.matchId || body.match_id;
-    const claimedResult = body.claimedResult || body.claimed_result;
-    const screenshotUrl = uploadedScreenshot || body.screenshotUrl || body.screenshot_url || body.screenshot;
-    const opponentClaimedResult = body.opponentClaimedResult || body.opponent_claimed_result;
+    const matchId = body.matchId || body.match_id || body.roomId || body.room_id;
+    let claimedResult = body.claimedResult || body.claimed_result || body.status || body.submitted_status;
+    if (claimedResult) {
+      claimedResult = String(claimedResult).toUpperCase().trim();
+      if (claimedResult === 'WIN') claimedResult = 'WON';
+      if (claimedResult === 'LOSS') claimedResult = 'LOST';
+    }
+
+    const screenshotUrl = uploadedScreenshot || body.screenshotUrl || body.screenshot_url || body.screenshot || '';
+    let opponentClaimedResult = body.opponentClaimedResult || body.opponent_claimed_result;
+    if (opponentClaimedResult) {
+      opponentClaimedResult = String(opponentClaimedResult).toUpperCase().trim();
+      if (opponentClaimedResult === 'WIN') opponentClaimedResult = 'WON';
+      if (opponentClaimedResult === 'LOSS') opponentClaimedResult = 'LOST';
+    }
     const bodyUserId = body.userId || body.user_id;
 
     if (!matchId || !claimedResult) {
-      return NextResponse.json({ status: false, message: 'Match ID and claimed result (WON/LOST) required' }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        status: false,
+        message: 'Match ID / Room ID and claimed result (WON/LOST) required'
+      }, { status: 400 });
     }
 
     let submittingUser = null;
-    if (bodyUserId) {
+    if (bodyUserId && mongoose.Types.ObjectId.isValid(bodyUserId)) {
       submittingUser = await User.findById(bodyUserId);
     }
     if (!submittingUser) {
       submittingUser = await getAuthUser(req);
     }
 
-    const match = await Match.findById(matchId);
-    if (!match) return NextResponse.json({ status: false, message: 'Match not found' }, { status: 404 });
+    let match = null;
+    if (mongoose.Types.ObjectId.isValid(matchId)) {
+      match = await Match.findOne({ $or: [{ _id: matchId }, { roomId: matchId }] });
+    }
+    if (!match) {
+      match = await Match.findOne({ roomCode: matchId });
+    }
+    if (!match) {
+      // Find room if match record doesn't exist yet
+      let room = null;
+      if (mongoose.Types.ObjectId.isValid(matchId)) {
+        room = await Room.findById(matchId);
+      }
+      if (!room) {
+        room = await Room.findOne({ roomCode: matchId });
+      }
+      if (room) {
+        match = await Match.findOne({ roomId: room._id });
+        if (!match) {
+          const [cUser, oUser] = await Promise.all([
+            User.findById(room.creatorId).lean().catch(() => null),
+            room.opponentId ? User.findById(room.opponentId).lean().catch(() => null) : null
+          ]);
+          match = await Match.create({
+            roomId: room._id,
+            gameMode: 'CLASSIC',
+            entryFee: room.entryFee,
+            prizePool: room.prizePool,
+            players: [
+              { userId: room.creatorId, username: cUser?.username || 'Player 1', avatarUrl: cUser?.avatarUrl || '' },
+              { userId: room.opponentId, username: oUser?.username || 'Player 2', avatarUrl: oUser?.avatarUrl || '' }
+            ],
+            status: 'ACTIVE'
+          });
+        }
+      }
+    }
+
+    if (!match) {
+      return NextResponse.json({
+        success: false,
+        status: false,
+        message: 'Match or room not found'
+      }, { status: 404 });
+    }
 
     const p1 = match.players?.[0] || {};
     const p2 = match.players?.[1] || {};
@@ -63,7 +122,7 @@ export async function POST(req) {
     const p1Name = p1.username || 'Player 1';
     const p2Name = p2.username || 'Player 2';
 
-    let dispute = await Dispute.findOne({ matchId });
+    let dispute = await Dispute.findOne({ matchId: match._id });
     if (!dispute) {
       dispute = await Dispute.create({
         matchId: match._id,
@@ -121,12 +180,12 @@ export async function POST(req) {
 
       if (winnerWallet) {
         winnerWallet.winningBalance += match.prizePool;
-        winnerWallet.lockedBalance = Math.max(0, winnerWallet.lockedBalance - match.entryFee);
+        winnerWallet.lockedBalance = Math.max(0, (winnerWallet.lockedBalance || 0) - match.entryFee);
         await winnerWallet.save();
       }
 
       if (loserWallet) {
-        loserWallet.lockedBalance = Math.max(0, loserWallet.lockedBalance - match.entryFee);
+        loserWallet.lockedBalance = Math.max(0, (loserWallet.lockedBalance || 0) - match.entryFee);
         await loserWallet.save();
       }
 
@@ -156,13 +215,18 @@ export async function POST(req) {
       }
 
       return NextResponse.json({
+        success: true,
         status: true,
         message: `Match auto-completed! ${winnerUsername} declared winner and awarded ₹${Math.round(match.prizePool)}. No dispute review needed.`,
         data: {
+          match_id: match._id.toString(),
+          room_id: match.roomId?.toString(),
           autoResolved: true,
           status: 'COMPLETED',
+          result_status: 'COMPLETED',
           winnerUsername,
           winnerId: winnerUserId,
+          prize_amount: Math.round(match.prizePool),
           prizePoolRs: Math.round(match.prizePool)
         }
       });
@@ -176,27 +240,41 @@ export async function POST(req) {
       await dispute.save();
 
       return NextResponse.json({
+        success: true,
         status: true,
         message: 'Conflicting result claims (Both players claimed WON). Sent to Admin Panel for dispute review.',
         data: {
+          match_id: match._id.toString(),
+          room_id: match.roomId?.toString(),
           autoResolved: false,
           status: 'PENDING_ADMIN_REVIEW',
-          claimId: dispute._id
+          result_status: 'UNDER_REVIEW',
+          claimId: dispute._id.toString(),
+          prize_amount: Math.round(match.prizePool)
         }
       });
     }
 
     // CASE C: Single claim recorded, waiting for opponent
     return NextResponse.json({
+      success: true,
       status: true,
-      message: 'Result recorded. Awaiting opponent result submission.',
+      message: 'Result submitted successfully. Under verification.',
       data: {
+        match_id: match._id.toString(),
+        room_id: match.roomId?.toString(),
         autoResolved: false,
         status: 'WAITING_OPPONENT',
-        claimId: dispute._id
+        result_status: 'UNDER_REVIEW',
+        claimId: dispute._id.toString(),
+        prize_amount: Math.round(match.prizePool)
       }
     });
   } catch (error) {
-    return NextResponse.json({ status: false, message: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      status: false,
+      message: error.message
+    }, { status: 500 });
   }
 }

@@ -5,13 +5,7 @@ import { Transaction } from '../lib/models/Transaction.js';
 import { User } from '../lib/models/User.js';
 import { Task } from '../lib/models/Task.js';
 import { ScratchCard } from '../lib/models/ScratchCard.js';
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/royalludo';
-
-async function connectDB() {
-  if (mongoose.connection.readyState >= 1) return;
-  await mongoose.connect(MONGODB_URI);
-}
+import { connectDB } from '../lib/db.js';
 
 async function processRoomExpiries() {
   try {

@@ -2,45 +2,45 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Room } from '@/lib/models/Room';
 import { refundWallet } from '@/lib/walletHelper';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'royal-ludo-super-secret-jwt-key-2026';
-
-function getUserFromToken(req) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '').trim();
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    return null;
-  }
-}
+import { getAuthUser } from '@/lib/authHelper';
+import mongoose from 'mongoose';
 
 export async function POST(req, { params }) {
   try {
     await connectDB();
-    const userPayload = getUserFromToken(req);
-    if (!userPayload) {
+    const user = await getAuthUser(req);
+    if (!user) {
       return NextResponse.json({
         success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Authentication token required' }
+        status: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
       }, { status: 401 });
     }
 
-    const { id } = params;
-    const room = await Room.findById(id);
+    const resolvedParams = await params;
+    const id = resolvedParams?.id;
+
+    let query = {};
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { $or: [{ _id: id }, { roomCode: id }] };
+    } else {
+      query = { roomCode: id };
+    }
+
+    const room = await Room.findOne(query);
 
     if (!room) {
       return NextResponse.json({
         success: false,
+        status: false,
         error: { code: 'ROOM_NOT_FOUND', message: 'Room not found' }
       }, { status: 404 });
     }
 
-    if (room.creatorId.toString() !== userPayload.userId) {
+    if (room.creatorId.toString() !== user._id.toString()) {
       return NextResponse.json({
         success: false,
+        status: false,
         error: { code: 'FORBIDDEN', message: 'Only the room host can cancel this room.' }
       }, { status: 403 });
     }
@@ -48,6 +48,7 @@ export async function POST(req, { params }) {
     if (room.status !== 'WAITING') {
       return NextResponse.json({
         success: false,
+        status: false,
         error: { code: 'CANNOT_CANCEL', message: `Cannot cancel room with status ${room.status}` }
       }, { status: 400 });
     }
@@ -65,11 +66,13 @@ export async function POST(req, { params }) {
 
     return NextResponse.json({
       success: true,
+      status: true,
       message: `Room cancelled. Entry fee of ₹${room.entryFee} refunded to your wallet.`,
       data: {
         room_id: room._id.toString(),
+        room_code: room.roomCode,
         refunded_amount: room.entryFee,
-        new_balance: refundResult.wallet.depositBalance + refundResult.wallet.winningBalance + refundResult.wallet.bonusBalance,
+        new_balance: refundResult.wallet ? (refundResult.wallet.depositBalance + refundResult.wallet.winningBalance + refundResult.wallet.bonusBalance) : null,
         status: 'CANCELLED'
       }
     }, { status: 200 });
@@ -77,6 +80,7 @@ export async function POST(req, { params }) {
   } catch (error) {
     return NextResponse.json({
       success: false,
+      status: false,
       error: { code: 'SERVER_ERROR', message: error.message }
     }, { status: 500 });
   }

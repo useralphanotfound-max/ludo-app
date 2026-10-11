@@ -8,11 +8,8 @@ try {
   // Ignore if setting DNS servers fails in specific restrictive environments
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://royaluseralpha83993:royaluseralphapass83993@cluster0.xmyjibo.mongodb.net/royalludo?retryWrites=true&w=majority';
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
-}
 
 async function resolveMongodbSrv(uri) {
   if (!uri.startsWith('mongodb+srv://')) {

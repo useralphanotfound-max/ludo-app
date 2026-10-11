@@ -14,7 +14,7 @@ export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB max for proofs & doc
 export async function saveUploadedFile(fileInput, subfolder = 'proofs', originalName = '') {
   if (!fileInput) return null;
 
-  const validFolders = ['avatars', 'proofs', 'payment_screenshots', 'kyc', 'support'];
+  const validFolders = ['avatars', 'proofs', 'payment_screenshots', 'kyc', 'support', 'qr', 'payment_methods', 'methods'];
   const targetFolder = validFolders.includes(subfolder) ? subfolder : 'proofs';
 
   let fileBuffer = null;

@@ -83,7 +83,10 @@ export async function GET(req, { params }) {
         } : null,
         match_id: match ? match._id.toString() : null,
         players,
-        created_at: room.createdAt
+        expires_at: room.expiresAt ? room.expiresAt.toISOString() : null,
+        seconds_remaining: room.expiresAt ? Math.max(0, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000)) : 180,
+        timeout_seconds: 180,
+        created_at: room.createdAt ? room.createdAt.toISOString() : new Date().toISOString()
       }
     }, { status: 200 });
 

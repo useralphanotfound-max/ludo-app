@@ -84,9 +84,11 @@ export async function GET(req) {
 
     const formatted = deposits.map(d => ({
       id: d._id,
+      _id: d._id,
       depositId: d.depositId,
       user: {
         id: d.userId?._id,
+        _id: d.userId?._id,
         username: d.userId?.username || 'Unknown',
         mobile: d.userId?.mobile || 'N/A',
         avatarUrl: d.userId?.avatarUrl
@@ -94,12 +96,16 @@ export async function GET(req) {
       amountRs: Math.round(d.amount || 0),
       utrNumber: d.utrNumber || 'N/A',
       proofImageUrl: d.proofImageUrl || null,
+      adminUpiId: d.adminUpiId || 'royalludo@upi',
+      adminQrImageUrl: d.adminQrImageUrl || '',
       paymentMethod: d.paymentMethod || 'UPI',
+      paymentMethodTitle: d.paymentMethodTitle || d.paymentMethod || 'UPI Direct Transfer',
       gatewayProvider: d.gatewayProvider || 'MANUAL_UPI',
       gatewayReferenceId: d.utrNumber || d.depositId || 'N/A',
       status: d.status || 'PENDING_APPROVAL',
       webhookVerified: d.webhookVerified || false,
       failureReason: d.rejectionReason || null,
+      rejectionReason: d.rejectionReason || null,
       createdAt: d.createdAt,
       completedAt: d.approvedAt || d.updatedAt
     }));
@@ -205,6 +211,21 @@ export async function POST(req) {
       return NextResponse.json({
         status: true,
         message: `Deposit of ₹${Math.round(deposit.amount)} approved and credited to user wallet successfully`
+      });
+    }
+
+    if (action === 'REJECT') {
+      if (deposit.status === 'APPROVED') {
+        return NextResponse.json({ status: false, message: 'Cannot reject an already approved deposit.' }, { status: 400 });
+      }
+
+      deposit.status = 'REJECTED';
+      deposit.rejectionReason = body.reason || body.rejectionReason || 'Invalid or unverified UTR proof';
+      await deposit.save();
+
+      return NextResponse.json({
+        status: true,
+        message: `Deposit request marked as REJECTED.`
       });
     }
 

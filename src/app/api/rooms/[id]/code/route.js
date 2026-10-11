@@ -57,9 +57,11 @@ export async function PUT(req, { params }) {
 
     return NextResponse.json({
       success: true,
+      status: true,
       message: 'Ludo King room code set.',
       data: {
         room_id: room._id.toString(),
+        room_code: room.roomCode,
         ludo_king_code: room.ludoKingCode,
         status: 'CODE_SHARED'
       }

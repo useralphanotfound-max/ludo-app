@@ -28,7 +28,7 @@ export async function GET(req) {
             userId: room.creatorId,
             amount: room.entryFee,
             referenceId: room.roomCode,
-            description: `Auto-refund for expired Room #${room.roomCode} (No player joined in 45s)`
+            description: `Auto-refund for expired Room #${room.roomCode} (Timeout)`
           });
         }
       } catch (refundErr) {
@@ -65,7 +65,8 @@ export async function GET(req) {
       entry_fee: r.entryFee,
       prize_pool: r.prizePool,
       status: r.status,
-      expires_at: r.expiresAt,
+      expires_at: r.expiresAt ? r.expiresAt.toISOString() : null,
+      seconds_remaining: r.expiresAt ? Math.max(0, Math.floor((new Date(r.expiresAt).getTime() - now.getTime()) / 1000)) : 180,
       creator: {
         id: r.creatorId?._id?.toString(),
         username: r.creatorId?.username || 'Player',
@@ -76,6 +77,7 @@ export async function GET(req) {
 
     return NextResponse.json({
       success: true,
+      status: true,
       data: {
         rooms: formattedRooms,
         count: formattedRooms.length

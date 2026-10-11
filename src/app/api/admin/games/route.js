@@ -49,7 +49,7 @@ export async function GET(req) {
     ]);
 
     const entryFeeTierData = tierAgg.map(t => {
-      const rs = Math.round((t._id || 5000) / 100);
+      const rs = Math.round(t._id || 100);
       return {
         name: `₹${rs} Tier`,
         rooms: t.count
@@ -64,8 +64,8 @@ export async function GET(req) {
         gameCode: r.roomCode || `Match #${4890 + i}`,
         creator: creatorName,
         opponent: opponentName,
-        entryFeeRs: Math.round((r.entryFee || 50000) / 100),
-        prizePoolRs: Math.round(((r.entryFee || 50000) * 1.8) / 100),
+        entryFeeRs: Math.round(r.entryFee || 100),
+        prizePoolRs: Math.round(r.prizePool || ((r.entryFee || 100) * 1.8)),
         status: r.status === 'WAITING' ? 'Open' : r.status === 'IN_PROGRESS' ? 'Playing' : r.status || 'Completed',
         winner: r.status === 'COMPLETED' ? creatorName : 'N/A',
         createdAt: r.createdAt

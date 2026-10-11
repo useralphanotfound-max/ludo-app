@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Deposit } from '@/lib/models/Deposit';
+import { PaymentMethod } from '@/lib/models/PaymentMethod';
+import { GameSettings } from '@/lib/models/GameSettings';
 import { getAuthUser } from '@/lib/authHelper';
 import { creditWallet } from '@/lib/walletHelper';
 import { saveUploadedFile } from '@/lib/uploadHelper';
+import mongoose from 'mongoose';
 
 export async function POST(req) {
   try {
@@ -20,6 +23,8 @@ export async function POST(req) {
     let utr = '';
     let depositAmount = 0;
     let proofImg = null;
+    let methodId = null;
+    let paymentMethodName = '';
 
     const contentType = req.headers.get('content-type') || '';
 
@@ -28,6 +33,8 @@ export async function POST(req) {
       depId = formData.get('transaction_id') || formData.get('transactionId') || formData.get('deposit_id') || formData.get('depositId');
       utr = (formData.get('utr_number') || formData.get('utrNumber') || formData.get('gateway_payment_id') || '').toString().trim();
       depositAmount = Number(formData.get('amount') || 0);
+      methodId = formData.get('method_id') || formData.get('methodId') || formData.get('payment_method_id');
+      paymentMethodName = formData.get('payment_method') || formData.get('method_name') || '';
 
       const file = formData.get('proof_image') || formData.get('proofImage') || formData.get('screenshot') || formData.get('file');
       if (file && typeof file === 'object' && file.name) {
@@ -42,6 +49,9 @@ export async function POST(req) {
       depId = body.transaction_id || body.transactionId || body.deposit_id || body.depositId;
       utr = (body.utr_number || body.utrNumber || body.gateway_payment_id || '').toString().trim();
       depositAmount = Number(body.amount || 0);
+      methodId = body.method_id || body.methodId || body.payment_method_id;
+      paymentMethodName = body.payment_method || body.method_name || '';
+
       const rawProof = body.proof_image_url || body.proofImageUrl || body.screenshot || null;
       if (rawProof) {
         const saved = await saveUploadedFile(rawProof, 'payment_screenshots');
@@ -62,7 +72,7 @@ export async function POST(req) {
       status: { $in: ['PENDING_APPROVAL', 'APPROVED'] }
     });
 
-    if (existingUtr) {
+    if (existingUtr && (!depId || existingUtr.depositId !== depId)) {
       return NextResponse.json({
         success: false,
         error: { code: 'DUPLICATE_UTR', message: 'This UTR / Transaction ID has already been submitted.' }
@@ -78,6 +88,21 @@ export async function POST(req) {
       deposit = await Deposit.findOne({ userId: user._id, status: 'INITIATED' }).sort({ createdAt: -1 });
     }
 
+    // Find payment method details
+    let selectedMethod = null;
+    if (methodId && mongoose.Types.ObjectId.isValid(methodId)) {
+      selectedMethod = await PaymentMethod.findById(methodId);
+    }
+    if (!selectedMethod) {
+      selectedMethod = await PaymentMethod.findOne({ isActive: true }).sort({ sortOrder: 1 });
+    }
+
+    let settings = await GameSettings.findOne({ key: 'global_settings' });
+    const adminUpi = selectedMethod?.upiId || settings?.adminUpiId || 'royalludo@upi';
+    const adminQr = selectedMethod?.qrImageUrl || settings?.adminUpiQrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${encodeURIComponent(adminUpi)}&pn=Royal%20Ludo&cu=INR`;
+    const methodName = selectedMethod?.name || paymentMethodName || 'UPI Direct Transfer';
+    const methodType = selectedMethod?.type || 'UPI';
+
     if (!deposit) {
       // Create new Deposit request directly
       const reqAmount = depositAmount > 0 ? depositAmount : 500;
@@ -86,8 +111,11 @@ export async function POST(req) {
         depositId: newDepId,
         userId: user._id,
         amount: reqAmount,
-        adminUpiId: 'royalludo@upi',
-        adminQrImageUrl: 'https://cdn.royalludo.com/qr/admin_upi_qr.png',
+        paymentMethod: methodType,
+        paymentMethodTitle: methodName,
+        paymentMethodId: selectedMethod?._id || null,
+        adminUpiId: adminUpi,
+        adminQrImageUrl: adminQr,
         utrNumber: utr,
         proofImageUrl: proofImg,
         status: 'PENDING_APPROVAL',
@@ -97,6 +125,13 @@ export async function POST(req) {
       deposit.utrNumber = utr;
       if (proofImg) deposit.proofImageUrl = proofImg;
       if (depositAmount > 0) deposit.amount = depositAmount;
+      if (selectedMethod) {
+        deposit.paymentMethod = methodType;
+        deposit.paymentMethodTitle = methodName;
+        deposit.paymentMethodId = selectedMethod._id;
+        deposit.adminUpiId = adminUpi;
+        deposit.adminQrImageUrl = adminQr;
+      }
       deposit.status = 'PENDING_APPROVAL';
       await deposit.save();
     }
@@ -108,6 +143,9 @@ export async function POST(req) {
         deposit_id: deposit.depositId,
         amount: deposit.amount,
         utr_number: deposit.utrNumber,
+        payment_method: deposit.paymentMethod,
+        payment_method_title: deposit.paymentMethodTitle,
+        proof_image_url: deposit.proofImageUrl,
         status: 'PENDING_APPROVAL'
       }
     }, { status: 200 });

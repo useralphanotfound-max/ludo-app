@@ -31,9 +31,9 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { entry_fee, entryFee, room_code, roomCode, is_private, isPrivate, player_count, playerCount } = body;
+    const { entry_fee, entryFee, amount, bet_amount, fee: bodyFee, room_code, roomCode, is_private, isPrivate, player_count, playerCount } = body;
 
-    const fee = Number(entry_fee || entryFee);
+    const fee = Number(entry_fee || entryFee || amount || bet_amount || bodyFee);
     const targetPlayerCount = Number(player_count || playerCount) === 4 ? 4 : 2;
 
     if (!fee || fee < 10) {
@@ -90,7 +90,7 @@ export async function POST(req) {
     const commission = (grossPrize * commPct) / 100;
     const netPrizePool = grossPrize - commission;
 
-    const timeoutSeconds = settings.roomTimeoutSeconds || 45;
+    const timeoutSeconds = settings.roomTimeoutSeconds || 180;
     const expiresAt = new Date(Date.now() + timeoutSeconds * 1000);
 
     const newRoom = await Room.create({

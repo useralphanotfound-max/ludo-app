@@ -257,18 +257,18 @@ export async function GET(req) {
               locked: Math.round((walletTotals.totalLocked || 0) / 100)
             },
             deposits: {
-              totalRs: Math.round(totalDepositsPaise / 100),
-              todayRs: Math.round(todayDepositsPaise / 100),
-              pendingRs: Math.round(pendingDepositsPaise / 100)
+              totalRs: Math.round(totalDepositsPaise),
+              todayRs: Math.round(todayDepositsPaise),
+              pendingRs: Math.round(pendingDepositsPaise)
             },
             withdrawals: {
-              totalRs: Math.round(totalWithdrawalsPaise / 100),
-              todayRs: Math.round(todayWithdrawalsPaise / 100),
-              pendingRs: Math.round(pendingWithdrawalsPaise / 100)
+              totalRs: Math.round(totalWithdrawalsPaise > 1000 ? totalWithdrawalsPaise / 100 : totalWithdrawalsPaise),
+              todayRs: Math.round(todayWithdrawalsPaise > 1000 ? todayWithdrawalsPaise / 100 : todayWithdrawalsPaise),
+              pendingRs: Math.round(pendingWithdrawalsPaise > 1000 ? pendingWithdrawalsPaise / 100 : pendingWithdrawalsPaise)
             },
-            revenueRs: Math.round(totalGGRPaise / 100),
-            bonusesRs: Math.round(totalBonusPaise / 100),
-            refundsRs: Math.round(totalRefundPaise / 100),
+            revenueRs: Math.round(totalGGRPaise),
+            bonusesRs: Math.round(totalBonusPaise),
+            refundsRs: Math.round(totalRefundPaise),
             revenueTrend
           },
           games: {
@@ -279,7 +279,7 @@ export async function GET(req) {
             disputed: disputedGames ?? 0,
             pendingResults: pendingDisputes ?? 0,
             totalEntryRs: 0,
-            totalPrizesRs: Math.round(totalPrizesPaise / 100)
+            totalPrizesRs: Math.round(totalPrizesPaise)
           },
           pending: {
             disputes: pendingDisputes ?? 0,
